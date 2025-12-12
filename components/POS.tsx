@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Product, CartItem, Partner, TransactionType, PaymentMethod, Transaction } from '../types';
-import { Search, Plus, Minus, ShoppingCart, User, CreditCard, Trash } from 'lucide-react';
+import { Search, Plus, Minus, ShoppingCart, User, CreditCard, Trash, Image as ImageIcon, ScanBarcode, AlertCircle } from 'lucide-react';
 import { generateId } from '../services/storage';
 
 interface POSProps {
@@ -11,29 +11,75 @@ interface POSProps {
 
 const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Load initial state from localStorage if available
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('ziyobook_pos_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(() => {
+    return localStorage.getItem('ziyobook_pos_customer') || '';
+  });
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => {
+    const saved = localStorage.getItem('ziyobook_pos_payment');
+    return (saved as PaymentMethod) || PaymentMethod.CASH;
+  });
+
   const [showReceipt, setShowReceipt] = useState<Transaction | null>(null);
 
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => 
-      p.stock > 0 && 
-      (p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       p.category.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [products, searchTerm]);
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ziyobook_pos_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem('ziyobook_pos_customer', selectedCustomerId);
+  }, [selectedCustomerId]);
+
+  useEffect(() => {
+    localStorage.setItem('ziyobook_pos_payment', paymentMethod);
+  }, [paymentMethod]);
 
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
-        if (existing.qty >= product.stock) return prev; // Cannot oversell
+        // Removed stock limit check to allow negative sales
         return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
       }
       return [...prev, { ...product, qty: 1 }];
     });
   };
+
+  // BARCODE SCANNER LOGIC
+  useEffect(() => {
+    if (!searchTerm) return;
+
+    const matchedProduct = products.find(p => p.barcode === searchTerm);
+    
+    // Allow adding even if stock is 0
+    if (matchedProduct) {
+      addToCart(matchedProduct);
+      setSearchTerm('');
+    }
+  }, [searchTerm, products]);
+
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => 
+      // Removed "p.stock > 0" filter to show all products
+      (p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       (p.barcode && p.barcode.includes(searchTerm)))
+    );
+  }, [products, searchTerm]);
 
   const removeFromCart = (id: string) => {
     setCart(prev => prev.filter(item => item.id !== id));
@@ -44,8 +90,8 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
       return prev.map(item => {
         if (item.id === id) {
           const newQty = item.qty + change;
-          const maxStock = products.find(p => p.id === id)?.stock || 0;
-          if (newQty > 0 && newQty <= maxStock) return { ...item, qty: newQty };
+          // Removed maxStock check to allow overselling
+          if (newQty > 0) return { ...item, qty: newQty };
         }
         return item;
       });
@@ -92,9 +138,14 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
 
     onTransaction(transaction, updatedProducts, updatedCustomer);
     setShowReceipt(transaction);
+    
+    // Clear State and LocalStorage
     setCart([]);
     setSelectedCustomerId('');
     setPaymentMethod(PaymentMethod.CASH);
+    localStorage.removeItem('ziyobook_pos_cart');
+    localStorage.removeItem('ziyobook_pos_customer');
+    localStorage.removeItem('ziyobook_pos_payment');
   };
 
   const handlePrint = () => {
@@ -109,12 +160,17 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="Kitob qidirish..."
+              placeholder="Shtrix-kodni skaner qiling yoki nomini yozing..."
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
             />
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400">
+                <ScanBarcode className="w-5 h-5" />
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
@@ -123,17 +179,36 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="flex flex-col items-start p-4 border border-slate-200 rounded-lg hover:border-emerald-500 hover:shadow-md transition-all bg-slate-50 text-left"
+                className={`flex flex-col items-start p-3 border rounded-lg hover:shadow-md transition-all text-left h-full ${
+                    product.stock <= 0 ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-emerald-500'
+                }`}
               >
-                <div className="w-full aspect-[2/3] bg-slate-200 rounded mb-2 flex items-center justify-center text-slate-400 mb-2">
-                    <span className="text-xs">Rasm</span>
+                <div className="w-full aspect-[2/3] bg-white rounded mb-2 flex items-center justify-center overflow-hidden border border-slate-100">
+                    {product.imageUrl ? (
+                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-slate-400 text-xs flex flex-col items-center">
+                         <ImageIcon className="w-8 h-8 mb-1 opacity-50"/>
+                         <span>Rasm yo'q</span>
+                      </div>
+                    )}
                 </div>
-                <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm">{product.name}</h3>
+                <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
                 <p className="text-xs text-slate-500 mb-1">{product.category}</p>
-                <p className="font-bold text-emerald-600 mt-auto">{product.priceSell.toLocaleString()} so'm</p>
-                <p className="text-xs text-slate-400 mt-1">Qoldiq: {product.stock}</p>
+                <div className="mt-auto pt-2 w-full">
+                  <p className="font-bold text-emerald-600">{product.priceSell.toLocaleString()} so'm</p>
+                  <div className={`text-xs mt-0.5 flex items-center ${product.stock <= 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                    {product.stock <= 0 && <AlertCircle className="w-3 h-3 mr-1" />}
+                    Qoldiq: {product.stock}
+                  </div>
+                </div>
               </button>
             ))}
+            {filteredProducts.length === 0 && (
+                <div className="col-span-full text-center text-slate-400 py-10">
+                    Mahsulot topilmadi
+                </div>
+            )}
           </div>
         </div>
       </div>

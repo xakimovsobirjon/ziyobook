@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Partner } from '../types';
-import { Plus, Phone, User, Trash2 } from 'lucide-react';
+import { Partner, Transaction, TransactionType } from '../types';
+import { Plus, Phone, User, Trash2, CreditCard } from 'lucide-react';
 import { generateId } from '../services/storage';
 
 interface CRMProps {
   partners: Partner[];
   onUpdatePartners: (partners: Partner[]) => void;
+  onAddTransaction: (transaction: Transaction) => void;
 }
 
-const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners }) => {
+const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners, onAddTransaction }) => {
   const [activeType, setActiveType] = useState<'CUSTOMER' | 'SUPPLIER'>('CUSTOMER');
   const [showModal, setShowModal] = useState(false);
   const [newPartner, setNewPartner] = useState({ name: '', phone: '', balance: 0 });
@@ -22,7 +23,7 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners }) => {
       type: activeType,
       name: newPartner.name,
       phone: newPartner.phone,
-      balance: activeType === 'CUSTOMER' ? 0 : 0 // Starts with 0
+      balance: activeType === 'CUSTOMER' ? 0 : 0 
     };
     onUpdatePartners([...partners, partner]);
     setShowModal(false);
@@ -33,6 +34,34 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners }) => {
     if(window.confirm("Hamkorni o'chirmoqchimisiz?")) {
       onUpdatePartners(partners.filter(p => p.id !== id));
     }
+  };
+
+  const handlePayment = (partner: Partner) => {
+    const debt = partner.balance;
+    if (debt <= 0) return alert("Mijozda qarz yo'q!");
+    
+    const amountStr = prompt(`Qarzni to'lash (${debt.toLocaleString()} so'm). Summani kiriting:`, debt.toString());
+    const amount = Number(amountStr);
+    
+    if (!amount || amount <= 0) return;
+
+    // 1. Update Partner Balance
+    const updatedPartners = partners.map(p => {
+      if (p.id === partner.id) return { ...p, balance: p.balance - amount };
+      return p;
+    });
+    onUpdatePartners(updatedPartners);
+
+    // 2. Create Transaction
+    const transaction: Transaction = {
+      id: generateId(),
+      date: new Date().toISOString(),
+      type: TransactionType.DEBT_PAYMENT,
+      totalAmount: amount,
+      partnerId: partner.id,
+      note: `${partner.name} - Qarz to'lovi`
+    };
+    onAddTransaction(transaction);
   };
 
   return (
@@ -81,12 +110,22 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners }) => {
               </button>
             </div>
             
-            <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-              <span className="text-sm text-slate-500">Balans:</span>
-              <span className={`font-bold ${partner.balance > 0 ? 'text-red-500' : partner.balance < 0 ? 'text-blue-500' : 'text-slate-800'}`}>
-                {partner.balance > 0 ? `Qarzi: ${partner.balance.toLocaleString()}` : 
-                 partner.balance < 0 ? `Haqimiz: ${Math.abs(partner.balance).toLocaleString()}` : '0'} so'm
-              </span>
+            <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">Balans:</span>
+                <span className={`font-bold ${partner.balance > 0 ? 'text-red-500' : partner.balance < 0 ? 'text-blue-500' : 'text-slate-800'}`}>
+                    {partner.balance > 0 ? `Qarzi: ${partner.balance.toLocaleString()}` : 
+                    partner.balance < 0 ? `Haqimiz: ${Math.abs(partner.balance).toLocaleString()}` : '0'} so'm
+                </span>
+              </div>
+              {activeType === 'CUSTOMER' && partner.balance > 0 && (
+                 <button 
+                   onClick={() => handlePayment(partner)}
+                   className="w-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 py-2 rounded-lg text-sm font-medium flex items-center justify-center"
+                 >
+                    <CreditCard className="w-3 h-3 mr-2" /> Qarzni to'lash
+                 </button>
+              )}
             </div>
           </div>
         ))}

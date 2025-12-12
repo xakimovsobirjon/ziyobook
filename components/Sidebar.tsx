@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingCart, BookOpen, Users, BarChart3, Bot, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, BookOpen, Users, BarChart3, Bot, Settings, History, Wallet, Briefcase, PackagePlus } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,11 +10,15 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isMobileOpen, setIsMobileOpen }) => {
   const menuItems = [
+    { id: 'dashboard', label: 'Bosh sahifa', icon: LayoutDashboard },
     { id: 'pos', label: 'Savdo (POS)', icon: ShoppingCart },
-    { id: 'dashboard', label: 'Umumiy hisobot', icon: LayoutDashboard },
+    { id: 'supply', label: 'Kirim (Xarid)', icon: PackagePlus },
     { id: 'inventory', label: 'Omborxona', icon: BookOpen },
-    { id: 'partners', label: 'Mijoz va Ta\'minot', icon: Users },
-    { id: 'reports', label: 'Moliya', icon: BarChart3 },
+    { id: 'history', label: 'Tarix', icon: History },
+    { id: 'reports', label: 'Hisobotlar', icon: BarChart3 },
+    { id: 'partners', label: 'Hamkorlar', icon: Users },
+    { id: 'employees', label: 'Hodimlar', icon: Briefcase },
+    { id: 'expenses', label: 'Harajatlar', icon: Wallet },
     { id: 'ai', label: 'AI Yordamchi', icon: Bot },
   ];
 

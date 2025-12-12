@@ -1,7 +1,9 @@
 export enum TransactionType {
-  SALE = 'SALE',
-  PURCHASE = 'PURCHASE', // Buying from supplier
-  EXPENSE = 'EXPENSE',   // Rent, bills, etc.
+  SALE = 'SALE',           // Mahsulot sotish
+  PURCHASE = 'PURCHASE',   // Mahsulot sotib olish (Kirim)
+  EXPENSE = 'EXPENSE',     // Umumiy harajatlar
+  SALARY = 'SALARY',       // Ish haqi to'lovi
+  DEBT_PAYMENT = 'DEBT_PAYMENT' // Mijozning qarzini to'lashi
 }
 
 export enum PaymentMethod {
@@ -18,6 +20,8 @@ export interface Product {
   priceSell: number; // Sotuv narxi
   stock: number;
   minStock: number; // Ogohlantirish chegarasi
+  barcode?: string; // Shtrix kod
+  imageUrl?: string; // Rasm uchun havola
 }
 
 export interface Partner {
@@ -25,7 +29,15 @@ export interface Partner {
   name: string;
   phone: string;
   type: 'CUSTOMER' | 'SUPPLIER';
-  balance: number; // Positive = they owe us (debt), Negative = we owe them (prepayment/debt)
+  balance: number; // Positive = ular qarz (bizga berishi kerak), Negative = biz qarzmiz
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  salary: number; // Oylik maoshi
 }
 
 export interface CartItem extends Product {
@@ -39,6 +51,7 @@ export interface Transaction {
   totalAmount: number;
   items?: CartItem[];
   partnerId?: string; // Customer or Supplier ID
+  employeeId?: string; // Agar oylik to'langan bo'lsa
   paymentMethod?: PaymentMethod;
   note?: string;
   profit?: number; // Only calculated for Sales
@@ -47,5 +60,6 @@ export interface Transaction {
 export interface StoreData {
   products: Product[];
   partners: Partner[];
+  employees: Employee[];
   transactions: Transaction[];
 }
