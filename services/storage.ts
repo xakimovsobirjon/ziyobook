@@ -7,7 +7,15 @@ const COLLECTION_NAME = 'ziyobook';
 const DOC_NAME = 'store';
 const SESSIONS_DOC = 'sessions';
 
-const INITIAL_DATA: StoreData = {
+// Initial data for new stores (exported for auth.ts)
+export const INITIAL_STORE_DATA: StoreData = {
+  products: [],
+  partners: [],
+  employees: [],
+  transactions: []
+};
+
+const LEGACY_INITIAL_DATA: StoreData = {
   products: [
     { id: '1', name: 'O\'tkan kunlar', category: 'Badiiy', priceBuy: 25000, priceSell: 45000, stock: 12, minStock: 5, barcode: '4780000000001', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/5e15bc9d92383.jpg' },
     { id: '2', name: 'Atom odatlar', category: 'Psixologiya', priceBuy: 40000, priceSell: 75000, stock: 4, minStock: 5, barcode: '9780000000002', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/698d51a19d8a121ce581499d7b70166820230527125740523041X5t8l2p0kH.jpg' },
@@ -51,15 +59,18 @@ export interface SupplySessionData {
   paymentMethod: PaymentMethod;
 }
 
-// Get store data from Firebase only
-export const getStoreData = async (): Promise<StoreData> => {
+// Get store data from Firebase (multi-tenant support)
+export const getStoreData = async (storeId?: string): Promise<StoreData> => {
   // Create a timeout promise (5 seconds)
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error('Firebase timeout')), 5000);
   });
 
   try {
-    const docRef = doc(db, COLLECTION_NAME, DOC_NAME);
+    // Multi-tenant: use storeId if provided
+    const docRef = storeId
+      ? doc(db, 'stores', storeId, 'data', 'main')
+      : doc(db, COLLECTION_NAME, DOC_NAME);
 
     // Race between Firebase fetch and timeout
     const docSnap = await Promise.race([
@@ -71,13 +82,14 @@ export const getStoreData = async (): Promise<StoreData> => {
       const data = docSnap.data() as StoreData;
       return data;
     } else {
-      // Initialize with default data if no data exists
-      await setDoc(docRef, INITIAL_DATA);
-      return INITIAL_DATA;
+      // Initialize with empty data for new stores
+      const initialData = storeId ? INITIAL_STORE_DATA : LEGACY_INITIAL_DATA;
+      await setDoc(docRef, initialData);
+      return initialData;
     }
   } catch (error) {
     console.error('Error fetching data from Firebase:', error);
-    return INITIAL_DATA;
+    return storeId ? INITIAL_STORE_DATA : LEGACY_INITIAL_DATA;
   }
 };
 
@@ -99,17 +111,20 @@ const removeUndefined = (obj: any): any => {
   return obj;
 };
 
-// Save store data to Firebase only
-export const saveStoreData = async (data: StoreData): Promise<void> => {
+// Save store data to Firebase (multi-tenant support)
+export const saveStoreData = async (data: StoreData, storeId?: string): Promise<void> => {
   console.log('💾 Saving data to Firebase...', {
     products: data.products.length,
     partners: data.partners.length,
     employees: data.employees.length,
-    transactions: data.transactions.length
+    transactions: data.transactions.length,
+    storeId: storeId || 'legacy'
   });
 
   try {
-    const docRef = doc(db, COLLECTION_NAME, DOC_NAME);
+    const docRef = storeId
+      ? doc(db, 'stores', storeId, 'data', 'main')
+      : doc(db, COLLECTION_NAME, DOC_NAME);
     // Clean data to remove undefined values
     const cleanData = removeUndefined(data);
     await setDoc(docRef, cleanData);
@@ -120,9 +135,11 @@ export const saveStoreData = async (data: StoreData): Promise<void> => {
   }
 };
 
-// Subscribe to real-time updates
-export const subscribeToStoreData = (callback: (data: StoreData) => void): (() => void) => {
-  const docRef = doc(db, COLLECTION_NAME, DOC_NAME);
+// Subscribe to real-time updates (multi-tenant support)
+export const subscribeToStoreData = (callback: (data: StoreData) => void, storeId?: string): (() => void) => {
+  const docRef = storeId
+    ? doc(db, 'stores', storeId, 'data', 'main')
+    : doc(db, COLLECTION_NAME, DOC_NAME);
 
   const unsubscribe = onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {

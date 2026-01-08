@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Loader2 } from 'lucide-react';
+import { Menu, Loader2, LogOut } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
@@ -11,10 +11,15 @@ import Reports from './components/Reports';
 import Employees from './components/Employees';
 import Expenses from './components/Expenses';
 import History from './components/History';
+import Login from './components/Login';
+import SuperAdmin from './components/SuperAdmin';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { getStoreData, saveStoreData, subscribeToStoreData } from './services/storage';
 import { StoreData, Product, Partner, Transaction, Employee, TransactionType } from './types';
 
-const App: React.FC = () => {
+// Main App Content (when logged in)
+const AppContent: React.FC = () => {
+  const { adminData, storeId, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [data, setData] = useState<StoreData>({ products: [], partners: [], employees: [], transactions: [] });
@@ -27,14 +32,15 @@ const App: React.FC = () => {
     const initData = async () => {
       try {
         setIsLoading(true);
-        const initialData = await getStoreData();
+        // Use storeId for multi-tenant data
+        const initialData = await getStoreData(storeId || undefined);
         setData(initialData);
         setError(null);
 
-        // Subscribe to real-time updates
+        // Subscribe to real-time updates with storeId
         unsubscribe = subscribeToStoreData((newData) => {
           setData(newData);
-        });
+        }, storeId || undefined);
       } catch (err) {
         console.error('Failed to load data:', err);
         setError('Ma\'lumotlarni yuklashda xatolik yuz berdi');
@@ -43,18 +49,21 @@ const App: React.FC = () => {
       }
     };
 
-    initData();
+    if (storeId) {
+      initData();
+    }
 
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, []);
+  }, [storeId]);
 
   const updateData = async (newData: StoreData) => {
     setData(newData);
-    await saveStoreData(newData);
+    // Pass storeId for multi-tenant save
+    await saveStoreData(newData, storeId || undefined);
   };
 
   // Helper Wrappers
@@ -148,133 +157,78 @@ const App: React.FC = () => {
   };
 
   const editTransaction = async (oldTx: Transaction, newTx: Transaction) => {
-    let newProducts = [...data.products];
-    let newPartners = [...data.partners];
-
-    // 1. Revert Old Transaction Effects (Simplified version of delete logic)
-    if (oldTx.type === TransactionType.SALE) {
-      if (oldTx.items) {
-        oldTx.items.forEach(item => {
-          const p = newProducts.find(prod => prod.id === item.id);
-          if (p) p.stock += item.qty;
-        });
-      }
-      if (oldTx.paymentMethod === 'DEBT' && oldTx.partnerId) {
-        const p = newPartners.find(part => part.id === oldTx.partnerId);
-        if (p) p.balance -= oldTx.totalAmount;
-      }
-    } else if (oldTx.type === TransactionType.PURCHASE) {
-      if (oldTx.items) {
-        oldTx.items.forEach(item => {
-          const p = newProducts.find(prod => prod.id === item.id);
-          if (p) p.stock -= item.qty;
-        });
-      }
-      if (oldTx.paymentMethod === 'DEBT' && oldTx.partnerId) {
-        const p = newPartners.find(part => part.id === oldTx.partnerId);
-        if (p) p.balance += oldTx.totalAmount;
-      }
-    }
-
-    // 2. Apply New Transaction Effects
-    if (newTx.type === TransactionType.SALE) {
-      if (newTx.items) {
-        newTx.items.forEach(item => {
-          const p = newProducts.find(prod => prod.id === item.id);
-          // Note: We are deducting from the ALREADY REVERTED stock
-          if (p) p.stock -= item.qty;
-        });
-      }
-      if (newTx.paymentMethod === 'DEBT' && newTx.partnerId) {
-        const p = newPartners.find(part => part.id === newTx.partnerId);
-        // Add new debt
-        if (p) p.balance += newTx.totalAmount;
-      }
-    } else if (newTx.type === TransactionType.PURCHASE) {
-      if (newTx.items) {
-        newTx.items.forEach(item => {
-          const p = newProducts.find(prod => prod.id === item.id);
-          if (p) p.stock += item.qty;
-        });
-      }
-      if (newTx.paymentMethod === 'DEBT' && newTx.partnerId) {
-        const p = newPartners.find(part => part.id === newTx.partnerId);
-        // Supplier debt means balance decreases (becomes more negative)
-        if (p) p.balance -= newTx.totalAmount;
-      }
-    }
-
-    // 3. Update Transaction in List
-    const newTransactions = data.transactions.map(t => t.id === newTx.id ? newTx : t);
-
-    await updateData({
-      ...data,
-      products: newProducts,
-      partners: newPartners,
-      transactions: newTransactions
-    });
+    const newTransactions = data.transactions.map(t => t.id === oldTx.id ? newTx : t);
+    await updateData({ ...data, transactions: newTransactions });
   };
 
   const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-[60vh] flex-col">
+          <Loader2 className="w-12 h-12 text-emerald-600 animate-spin mb-4" />
+          <h2 className="text-xl font-semibold text-slate-700">Ma'lumotlar yuklanmoqda...</h2>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="flex items-center justify-center h-[60vh] flex-col">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center max-w-md">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h2 className="text-xl font-bold text-red-700 mb-2">Xatolik</h2>
+            <p className="text-red-600">{error}</p>
+          </div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
-      case 'dashboard': return <Dashboard data={data} />;
-      case 'inventory': return <Inventory products={data.products} onUpdateProducts={updateProducts} />;
-      case 'pos': return <POS products={data.products} customers={data.partners} onTransaction={handlePosTransaction} />;
-      case 'supply': return <Supply products={data.products} suppliers={data.partners} onTransaction={handleSupplyTransaction} onUpdateProducts={updateProducts} />;
-      case 'partners': return <CRM partners={data.partners} onUpdatePartners={updatePartners} onAddTransaction={addTransaction} />;
-      case 'employees': return <Employees employees={data.employees || []} onUpdateEmployees={updateEmployees} onPaySalary={addTransaction} />;
-      case 'expenses': return <Expenses onAddExpense={addTransaction} />;
-      case 'history': return <History transactions={data.transactions} onDeleteTransaction={deleteTransaction} onEditTransaction={editTransaction} />;
-      case 'reports': return <Reports data={data} />;
-      case 'ai': return <AIAnalyst data={data} />;
-      default: return <Dashboard data={data} />;
+      case 'dashboard':
+        return <Dashboard products={data.products} transactions={data.transactions} partners={data.partners} employees={data.employees} />;
+      case 'pos':
+        return <POS products={data.products} customers={data.partners.filter(p => p.type === 'CUSTOMER')} onTransaction={handlePosTransaction} />;
+      case 'supply':
+        return <Supply products={data.products} suppliers={data.partners.filter(p => p.type === 'SUPPLIER')} onSupply={handleSupplyTransaction} onUpdateProducts={updateProducts} />;
+      case 'inventory':
+        return <Inventory products={data.products} onUpdateProducts={updateProducts} />;
+      case 'history':
+        return <History transactions={data.transactions} onDeleteTransaction={deleteTransaction} onEditTransaction={editTransaction} />;
+      case 'reports':
+        return <Reports transactions={data.transactions} products={data.products} />;
+      case 'crm':
+        return <CRM partners={data.partners} onUpdatePartners={updatePartners} onAddTransaction={addTransaction} />;
+      case 'employees':
+        return <Employees employees={data.employees} onUpdateEmployees={updateEmployees} onPaySalary={addTransaction} />;
+      case 'expenses':
+        return <Expenses onAddExpense={addTransaction} />;
+      case 'ai':
+        return <AIAnalyst data={data} />;
+      default:
+        return <Dashboard products={data.products} transactions={data.transactions} partners={data.partners} employees={data.employees} />;
     }
   };
 
   const getTitle = () => {
     const titles: Record<string, string> = {
-      pos: 'Savdo nuqtasi', supply: 'Kirim (Xarid)', inventory: 'Omborxona', partners: 'Hamkorlar',
-      ai: 'Sun\'iy Intellekt', history: 'Tarix', employees: 'Hodimlar',
-      expenses: 'Harajatlar', reports: 'Hisobotlar'
+      dashboard: 'Bosh Sahifa',
+      pos: 'Savdo (POS)',
+      supply: 'Kirim (Xarid)',
+      inventory: 'Omborxona',
+      history: 'Tarix',
+      reports: 'Hisobotlar',
+      crm: 'Hamkorlar',
+      employees: 'Hodimlar',
+      expenses: 'Harajatlar',
+      ai: 'AI Yordamchi'
     };
-    return titles[activeTab] || 'Bosh sahifa';
+    return titles[activeTab] || 'ZiyoBook';
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-emerald-600 mx-auto mb-4" />
-          <p className="text-slate-600 font-medium">Ma'lumotlar yuklanmoqda...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-xl shadow-lg max-w-md">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-red-600 text-2xl">!</span>
-          </div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Xatolik yuz berdi</h2>
-          <p className="text-slate-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition"
-          >
-            Qayta urinish
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -292,12 +246,19 @@ const App: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-sm text-right hidden sm:block">
-              <p className="font-bold text-slate-800">Administrator</p>
-              <p className="text-xs text-slate-500">{new Date().toLocaleDateString()}</p>
+              <p className="font-bold text-slate-800">{adminData?.storeName || 'Do\'kon'}</p>
+              <p className="text-xs text-slate-500">{adminData?.email}</p>
             </div>
             <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold border border-emerald-200">
-              A
+              {adminData?.storeName?.charAt(0)?.toUpperCase() || 'A'}
             </div>
+            <button
+              onClick={logout}
+              className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Chiqish"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
@@ -307,6 +268,47 @@ const App: React.FC = () => {
       </main>
     </div>
   );
+};
+
+// Main App with Auth Provider
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
+  );
+};
+
+// Auth Gate - decides what to show
+const AuthGate: React.FC = () => {
+  const { user, loading, adminData } = useAuth();
+
+  // Check for super admin route
+  const isSuperAdminRoute = window.location.search.includes('superadmin=true');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 flex items-center justify-center">
+        <div className="text-center text-white">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" />
+          <p className="text-lg">Yuklanmoqda...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in - show login
+  if (!user || !adminData) {
+    return <Login />;
+  }
+
+  // Super Admin Panel (add ?superadmin=true to URL)
+  if (isSuperAdminRoute && adminData?.isSuperAdmin) {
+    return <SuperAdmin />;
+  }
+
+  // Logged in - show app
+  return <AppContent />;
 };
 
 export default App;
