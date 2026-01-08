@@ -1,19 +1,22 @@
 import React, { useState, useRef } from 'react';
 import { Product } from '../types';
-import { Plus, Search, Edit2, Trash2, AlertCircle, Image as ImageIcon, ScanBarcode, Upload, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, AlertCircle, Image as ImageIcon, ScanBarcode, Upload, X, Loader2, Check } from 'lucide-react';
 import { generateId, convertFileToBase64 } from '../services/storage';
 
 interface InventoryProps {
   products: Product[];
-  onUpdateProducts: (products: Product[]) => void;
+  onUpdateProducts: (products: Product[]) => Promise<void>;
 }
 
 const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null); // product ID to delete
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // State for Product Form
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '', category: '', priceBuy: 0, priceSell: 0, stock: 0, minStock: 5, imageUrl: '', barcode: ''
@@ -31,23 +34,50 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.priceSell) return;
 
-    if (editingProduct) {
-      const updated = products.map(p => p.id === editingProduct.id ? { ...p, ...formData } as Product : p);
-      onUpdateProducts(updated);
-    } else {
-      const newProduct: Product = { id: generateId(), ...formData as Product };
-      onUpdateProducts([...products, newProduct]);
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      if (editingProduct) {
+        const updated = products.map(p => p.id === editingProduct.id ? { ...p, ...formData } as Product : p);
+        await onUpdateProducts(updated);
+      } else {
+        const newProduct: Product = { id: generateId(), ...formData as Product };
+        await onUpdateProducts([...products, newProduct]);
+      }
+      setIsModalOpen(false);
+      // Show success toast
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Saqlashda xatolik:', error);
+      alert('Saqlashda xatolik yuz berdi!');
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm("Rostdan ham o'chirmoqchimisiz?")) {
-      onUpdateProducts(products.filter(p => p.id !== id));
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirm(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
+    try {
+      setIsSaving(true);
+      await onUpdateProducts(products.filter(p => p.id !== deleteConfirm));
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('O\'chirishda xatolik:', error);
+      alert('O\'chirishda xatolik yuz berdi!');
+    } finally {
+      setIsSaving(false);
+      setDeleteConfirm(null);
     }
   };
 
@@ -58,22 +88,31 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
         const base64 = await convertFileToBase64(file);
         setFormData({ ...formData, imageUrl: base64 });
       } catch (error) {
+        console.error("Image upload error:", error);
         alert("Rasm yuklashda xatolik bo'ldi");
       }
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.barcode && p.barcode.includes(searchTerm))
   );
 
   return (
     <div className="space-y-6">
+      {/* Success Toast */}
+      {saveSuccess && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+          <Check className="w-5 h-5" />
+          <span>Muvaffaqiyatli saqlandi!</span>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-slate-800">Omborxona</h2>
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center"
         >
@@ -141,7 +180,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
                       <button onClick={() => handleOpenModal(product)} className="p-1.5 hover:bg-blue-50 text-blue-600 rounded" title="Tahrirlash">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(product.id)} className="p-1.5 hover:bg-red-50 text-red-600 rounded" title="O'chirish">
+                      <button onClick={() => handleDeleteClick(product.id)} className="p-1.5 hover:bg-red-50 text-red-600 rounded" title="O'chirish">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -165,90 +204,137 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Shtrix-kod (Skaner)</label>
                 <div className="relative">
-                    <input 
-                        type="text" 
-                        className="w-full border rounded-lg p-2 pl-9" 
-                        value={formData.barcode || ''} 
-                        onChange={e => setFormData({...formData, barcode: e.target.value})} 
-                        placeholder="Skaner qiling..."
-                    />
-                    <ScanBarcode className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg p-2 pl-9"
+                    value={formData.barcode || ''}
+                    onChange={e => setFormData({ ...formData, barcode: e.target.value })}
+                    placeholder="Skaner qiling..."
+                  />
+                  <ScanBarcode className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                 </div>
               </div>
-              
+
               <div className="flex gap-4 items-start">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Kitob rasmi</label>
-                    <input 
-                        type="file" 
-                        ref={fileInputRef}
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                    />
-                    <div className="flex items-center gap-3">
-                        <button 
-                            type="button" 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300"
-                        >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Rasm yuklash
-                        </button>
-                        {formData.imageUrl && (
-                            <button 
-                                type="button" 
-                                onClick={() => setFormData({...formData, imageUrl: ''})}
-                                className="text-red-500 hover:text-red-700 p-2"
-                                title="Rasmni o'chirish"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        )}
-                    </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Kitob rasmi</label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Rasm yuklash
+                    </button>
+                    {formData.imageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                        className="text-red-500 hover:text-red-700 p-2"
+                        title="Rasmni o'chirish"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
-                  <div className="w-20 h-28 bg-slate-100 rounded border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
-                      {formData.imageUrl ? (
-                          <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                      ) : (
-                          <ImageIcon className="w-8 h-8 text-slate-300" />
-                      )}
-                  </div>
+                </div>
+                <div className="w-20 h-28 bg-slate-100 rounded border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
+                  {formData.imageUrl ? (
+                    <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-slate-300" />
+                  )}
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Kitob nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <input type="text" required className="w-full border rounded-lg p-2" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
+                <input type="text" required className="w-full border rounded-lg p-2" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Tannarx</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.priceBuy} onChange={e => setFormData({...formData, priceBuy: Number(e.target.value)})} />
+                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.priceBuy} onChange={e => setFormData({ ...formData, priceBuy: Number(e.target.value) })} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv Narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.priceSell} onChange={e => setFormData({...formData, priceSell: Number(e.target.value)})} />
+                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.priceSell} onChange={e => setFormData({ ...formData, priceSell: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Qoldiq</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.stock} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} />
+                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.stock} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Min. Chegara</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.minStock} onChange={e => setFormData({...formData, minStock: Number(e.target.value)})} />
+                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.minStock} onChange={e => setFormData({ ...formData, minStock: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Bekor qilish</button>
-                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Saqlash</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg disabled:opacity-50">Bekor qilish</button>
+                <button type="submit" disabled={isSaving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saqlanmoqda...
+                    </>
+                  ) : (
+                    'Saqlash'
+                  )}
+                </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">O'chirishni tasdiqlang</h3>
+              <p className="text-slate-600 mb-6">Rostdan ham bu kitobni o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg disabled:opacity-50"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      O'chirilmoqda...
+                    </>
+                  ) : (
+                    "Ha, o'chirish"
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

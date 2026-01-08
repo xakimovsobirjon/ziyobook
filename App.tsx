@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, Loader2 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
@@ -11,28 +11,57 @@ import Reports from './components/Reports';
 import Employees from './components/Employees';
 import Expenses from './components/Expenses';
 import History from './components/History';
-import { getStoreData, saveStoreData } from './services/storage';
+import { getStoreData, saveStoreData, subscribeToStoreData } from './services/storage';
 import { StoreData, Product, Partner, Transaction, Employee, TransactionType } from './types';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [data, setData] = useState<StoreData>({ products: [], partners: [], employees: [], transactions: [] });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setData(getStoreData());
+    let unsubscribe: (() => void) | null = null;
+
+    const initData = async () => {
+      try {
+        setIsLoading(true);
+        const initialData = await getStoreData();
+        setData(initialData);
+        setError(null);
+
+        // Subscribe to real-time updates
+        unsubscribe = subscribeToStoreData((newData) => {
+          setData(newData);
+        });
+      } catch (err) {
+        console.error('Failed to load data:', err);
+        setError('Ma\'lumotlarni yuklashda xatolik yuz berdi');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initData();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
-  const updateData = (newData: StoreData) => {
+  const updateData = async (newData: StoreData) => {
     setData(newData);
-    saveStoreData(newData);
+    await saveStoreData(newData);
   };
 
   // Helper Wrappers
   const updateProducts = (products: Product[]) => updateData({ ...data, products });
   const updatePartners = (partners: Partner[]) => updateData({ ...data, partners });
   const updateEmployees = (employees: Employee[]) => updateData({ ...data, employees });
-  
+
   // Generic Transaction Handler (Used for Expenses, Salaries, Supply, Debt Payment)
   const addTransaction = (transaction: Transaction) => {
     updateData({
@@ -69,7 +98,7 @@ const App: React.FC = () => {
     });
   };
 
-  const deleteTransaction = (id: string) => {
+  const deleteTransaction = async (id: string) => {
     const tx = data.transactions.find(t => t.id === id);
     if (!tx) return;
 
@@ -99,7 +128,6 @@ const App: React.FC = () => {
         });
       }
       // Revert Debt if applicable (We owed them, so canceling means we owe less, i.e., add to balance because balance is negative)
-      // Original logic: balance = balance - amount. Reverse: balance + amount.
       if (tx.paymentMethod === 'DEBT' && tx.partnerId) {
         const p = newPartners.find(part => part.id === tx.partnerId);
         if (p) p.balance += tx.totalAmount;
@@ -111,7 +139,75 @@ const App: React.FC = () => {
     }
 
     const newTransactions = data.transactions.filter(t => t.id !== id);
-    updateData({
+    await updateData({
+      ...data,
+      products: newProducts,
+      partners: newPartners,
+      transactions: newTransactions
+    });
+  };
+
+  const editTransaction = async (oldTx: Transaction, newTx: Transaction) => {
+    let newProducts = [...data.products];
+    let newPartners = [...data.partners];
+
+    // 1. Revert Old Transaction Effects (Simplified version of delete logic)
+    if (oldTx.type === TransactionType.SALE) {
+      if (oldTx.items) {
+        oldTx.items.forEach(item => {
+          const p = newProducts.find(prod => prod.id === item.id);
+          if (p) p.stock += item.qty;
+        });
+      }
+      if (oldTx.paymentMethod === 'DEBT' && oldTx.partnerId) {
+        const p = newPartners.find(part => part.id === oldTx.partnerId);
+        if (p) p.balance -= oldTx.totalAmount;
+      }
+    } else if (oldTx.type === TransactionType.PURCHASE) {
+      if (oldTx.items) {
+        oldTx.items.forEach(item => {
+          const p = newProducts.find(prod => prod.id === item.id);
+          if (p) p.stock -= item.qty;
+        });
+      }
+      if (oldTx.paymentMethod === 'DEBT' && oldTx.partnerId) {
+        const p = newPartners.find(part => part.id === oldTx.partnerId);
+        if (p) p.balance += oldTx.totalAmount;
+      }
+    }
+
+    // 2. Apply New Transaction Effects
+    if (newTx.type === TransactionType.SALE) {
+      if (newTx.items) {
+        newTx.items.forEach(item => {
+          const p = newProducts.find(prod => prod.id === item.id);
+          // Note: We are deducting from the ALREADY REVERTED stock
+          if (p) p.stock -= item.qty;
+        });
+      }
+      if (newTx.paymentMethod === 'DEBT' && newTx.partnerId) {
+        const p = newPartners.find(part => part.id === newTx.partnerId);
+        // Add new debt
+        if (p) p.balance += newTx.totalAmount;
+      }
+    } else if (newTx.type === TransactionType.PURCHASE) {
+      if (newTx.items) {
+        newTx.items.forEach(item => {
+          const p = newProducts.find(prod => prod.id === item.id);
+          if (p) p.stock += item.qty;
+        });
+      }
+      if (newTx.paymentMethod === 'DEBT' && newTx.partnerId) {
+        const p = newPartners.find(part => part.id === newTx.partnerId);
+        // Supplier debt means balance decreases (becomes more negative)
+        if (p) p.balance -= newTx.totalAmount;
+      }
+    }
+
+    // 3. Update Transaction in List
+    const newTransactions = data.transactions.map(t => t.id === newTx.id ? newTx : t);
+
+    await updateData({
       ...data,
       products: newProducts,
       partners: newPartners,
@@ -128,7 +224,7 @@ const App: React.FC = () => {
       case 'partners': return <CRM partners={data.partners} onUpdatePartners={updatePartners} onAddTransaction={addTransaction} />;
       case 'employees': return <Employees employees={data.employees || []} onUpdateEmployees={updateEmployees} onPaySalary={addTransaction} />;
       case 'expenses': return <Expenses onAddExpense={addTransaction} />;
-      case 'history': return <History transactions={data.transactions} onDeleteTransaction={deleteTransaction} />;
+      case 'history': return <History transactions={data.transactions} onDeleteTransaction={deleteTransaction} onEditTransaction={editTransaction} />;
       case 'reports': return <Reports data={data} />;
       case 'ai': return <AIAnalyst data={data} />;
       default: return <Dashboard data={data} />;
@@ -137,18 +233,51 @@ const App: React.FC = () => {
 
   const getTitle = () => {
     const titles: Record<string, string> = {
-      pos: 'Savdo nuqtasi', supply: 'Kirim (Xarid)', inventory: 'Omborxona', partners: 'Hamkorlar', 
-      ai: 'Sun\'iy Intellekt', history: 'Tarix', employees: 'Hodimlar', 
+      pos: 'Savdo nuqtasi', supply: 'Kirim (Xarid)', inventory: 'Omborxona', partners: 'Hamkorlar',
+      ai: 'Sun\'iy Intellekt', history: 'Tarix', employees: 'Hodimlar',
       expenses: 'Harajatlar', reports: 'Hisobotlar'
     };
     return titles[activeTab] || 'Bosh sahifa';
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-emerald-600 mx-auto mb-4" />
+          <p className="text-slate-600 font-medium">Ma'lumotlar yuklanmoqda...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-xl shadow-lg max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-red-600 text-2xl">!</span>
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Xatolik yuz berdi</h2>
+          <p className="text-slate-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition"
+          >
+            Qayta urinish
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex">
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
@@ -162,13 +291,13 @@ const App: React.FC = () => {
             <h1 className="text-xl font-bold text-slate-800 capitalize">{getTitle()}</h1>
           </div>
           <div className="flex items-center space-x-4">
-             <div className="text-sm text-right hidden sm:block">
-                <p className="font-bold text-slate-800">Administrator</p>
-                <p className="text-xs text-slate-500">{new Date().toLocaleDateString()}</p>
-             </div>
-             <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold border border-emerald-200">
-                A
-             </div>
+            <div className="text-sm text-right hidden sm:block">
+              <p className="font-bold text-slate-800">Administrator</p>
+              <p className="text-xs text-slate-500">{new Date().toLocaleDateString()}</p>
+            </div>
+            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold border border-emerald-200">
+              A
+            </div>
           </div>
         </header>
 

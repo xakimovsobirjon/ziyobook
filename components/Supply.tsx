@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Product, Partner, TransactionType, PaymentMethod, Transaction } from '../types';
 import { Search, Plus, Minus, PackagePlus, User, Trash, Image as ImageIcon, ScanBarcode, Upload, X } from 'lucide-react';
-import { generateId, convertFileToBase64 } from '../services/storage';
+import { generateId, convertFileToBase64, getSupplySessionData, saveSupplySessionData, clearSupplySessionData, SupplyCartItem } from '../services/storage';
 
 interface SupplyProps {
   products: Product[];
@@ -10,32 +10,15 @@ interface SupplyProps {
   onUpdateProducts: (products: Product[]) => void;
 }
 
-// Extended cart item for Supply to handle cost price editing
-interface SupplyCartItem extends Product {
-  qty: number;
-  newCost: number; // Editable cost price for this batch
-}
-
 const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onUpdateProducts }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
-  // Persistent State
-  const [cart, setCart] = useState<SupplyCartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('ziyobook_supply_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(() => {
-    return localStorage.getItem('ziyobook_supply_supplier') || '';
-  });
-
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => {
-    const saved = localStorage.getItem('ziyobook_supply_payment');
-    return (saved as PaymentMethod) || PaymentMethod.CASH;
-  });
+  // Session state
+  const [cart, setCart] = useState<SupplyCartItem[]>([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
 
   // Modal State for New Product
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,18 +27,49 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Effects
+  // Load initial state from Firebase
   useEffect(() => {
-    localStorage.setItem('ziyobook_supply_cart', JSON.stringify(cart));
-  }, [cart]);
+    const loadSession = async () => {
+      try {
+        const session = await getSupplySessionData();
+        setCart(session.cart);
+        setSelectedSupplierId(session.supplierId);
+        setPaymentMethod(session.paymentMethod);
+      } catch (error) {
+        console.error('Error loading Supply session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadSession();
+  }, []);
+
+  // Save session to Firebase with debounce
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const saveSessionDebounced = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveSupplySessionData({
+        cart,
+        supplierId: selectedSupplierId,
+        paymentMethod
+      });
+    }, 500);
+  }, [cart, selectedSupplierId, paymentMethod]);
 
   useEffect(() => {
-    localStorage.setItem('ziyobook_supply_supplier', selectedSupplierId);
-  }, [selectedSupplierId]);
-
-  useEffect(() => {
-    localStorage.setItem('ziyobook_supply_payment', paymentMethod);
-  }, [paymentMethod]);
+    if (!isLoading) {
+      saveSessionDebounced();
+    }
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [cart, selectedSupplierId, paymentMethod, isLoading, saveSessionDebounced]);
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -72,7 +86,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     if (!searchTerm) return;
 
     const matchedProduct = products.find(p => p.barcode === searchTerm);
-    
+
     if (matchedProduct) {
       addToCart(matchedProduct);
       setSearchTerm(''); // Clear input
@@ -80,8 +94,8 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
   }, [searchTerm, products]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p => 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    return products.filter(p =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (p.barcode && p.barcode.includes(searchTerm))
     );
@@ -110,9 +124,9 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
 
   const totalAmount = cart.reduce((sum, item) => sum + (item.newCost * item.qty), 0);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return;
-    
+
     // Create transaction
     const transaction: Transaction = {
       id: generateId(),
@@ -129,8 +143,8 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     const updatedProducts = products.map(p => {
       const inCart = cart.find(c => c.id === p.id);
       if (inCart) {
-        return { 
-          ...p, 
+        return {
+          ...p,
           stock: p.stock + inCart.qty,
           priceBuy: inCart.newCost // Update cost price to the new one
         };
@@ -150,15 +164,13 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     }
 
     onTransaction(transaction, updatedProducts, updatedSupplier);
-    
-    // Clear state and storage
+
+    // Clear state and Firebase session
     setCart([]);
     setSelectedSupplierId('');
     setPaymentMethod(PaymentMethod.CASH);
-    localStorage.removeItem('ziyobook_supply_cart');
-    localStorage.removeItem('ziyobook_supply_supplier');
-    localStorage.removeItem('ziyobook_supply_payment');
-    
+    await clearSupplySessionData();
+
     alert("Mahsulotlar muvaffaqiyatli kirim qilindi!");
   };
 
@@ -202,6 +214,14 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+        <div className="text-slate-500">Yuklanmoqda...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
       {/* Product List */}
@@ -219,10 +239,10 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               autoFocus
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400">
-                <ScanBarcode className="w-5 h-5" />
+              <ScanBarcode className="w-5 h-5" />
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsModalOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg flex items-center whitespace-nowrap"
           >
@@ -238,17 +258,17 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                 className="flex flex-col items-start p-3 border border-slate-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all bg-slate-50 text-left h-full"
               >
                 <div className="w-full aspect-[2/3] bg-slate-200 rounded mb-2 flex items-center justify-center overflow-hidden relative">
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="text-slate-400 text-xs flex flex-col items-center">
-                         <ImageIcon className="w-8 h-8 mb-1 opacity-50"/>
-                         <span>Rasm yo'q</span>
-                      </div>
-                    )}
-                    <div className="absolute top-1 right-1 bg-white px-1.5 rounded text-xs font-bold text-slate-600 shadow-sm">
-                        {product.stock} dona
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-slate-400 text-xs flex flex-col items-center">
+                      <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
+                      <span>Rasm yo'q</span>
                     </div>
+                  )}
+                  <div className="absolute top-1 right-1 bg-white px-1.5 rounded text-xs font-bold text-slate-600 shadow-sm">
+                    {product.stock} dona
+                  </div>
                 </div>
                 <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
                 <p className="text-xs text-slate-500 mb-1">{product.category}</p>
@@ -277,39 +297,39 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
             cart.map(item => (
               <div key={item.id} className="bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
                 <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-sm font-medium text-slate-800 line-clamp-1 flex-1">{item.name}</h4>
-                    <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 ml-2"><Trash className="w-4 h-4" /></button>
+                  <h4 className="text-sm font-medium text-slate-800 line-clamp-1 flex-1">{item.name}</h4>
+                  <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 ml-2"><Trash className="w-4 h-4" /></button>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3 mb-2">
-                    <div>
-                        <label className="text-[10px] text-slate-500 uppercase font-bold">Kelish narxi</label>
-                        <input 
-                            type="number" 
-                            className="w-full border rounded p-1 text-sm"
-                            value={item.newCost}
-                            onChange={(e) => updateCost(item.id, Number(e.target.value))}
-                        />
+                  <div>
+                    <label className="text-[10px] text-slate-500 uppercase font-bold">Kelish narxi</label>
+                    <input
+                      type="number"
+                      className="w-full border rounded p-1 text-sm"
+                      value={item.newCost}
+                      onChange={(e) => updateCost(item.id, Number(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 uppercase font-bold">Soni</label>
+                    <div className="flex items-center">
+                      <button onClick={() => updateQty(item.id, -1)} className="p-1 bg-slate-100 rounded hover:bg-slate-200"><Minus className="w-3 h-3" /></button>
+                      <input
+                        type="number"
+                        className="w-full text-center border-none focus:ring-0 p-0 text-sm font-bold"
+                        value={item.qty}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setCart(prev => prev.map(p => p.id === item.id ? { ...p, qty: val } : p));
+                        }}
+                      />
+                      <button onClick={() => updateQty(item.id, 1)} className="p-1 bg-slate-100 rounded hover:bg-slate-200"><Plus className="w-3 h-3" /></button>
                     </div>
-                    <div>
-                        <label className="text-[10px] text-slate-500 uppercase font-bold">Soni</label>
-                        <div className="flex items-center">
-                            <button onClick={() => updateQty(item.id, -1)} className="p-1 bg-slate-100 rounded hover:bg-slate-200"><Minus className="w-3 h-3" /></button>
-                            <input 
-                                type="number" 
-                                className="w-full text-center border-none focus:ring-0 p-0 text-sm font-bold"
-                                value={item.qty}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value) || 0;
-                                    setCart(prev => prev.map(p => p.id === item.id ? { ...p, qty: val } : p));
-                                }}
-                            />
-                            <button onClick={() => updateQty(item.id, 1)} className="p-1 bg-slate-100 rounded hover:bg-slate-200"><Plus className="w-3 h-3" /></button>
-                        </div>
-                    </div>
+                  </div>
                 </div>
                 <div className="text-right text-sm font-bold text-slate-700 border-t pt-1 border-dashed">
-                    Jami: {(item.newCost * item.qty).toLocaleString()} so'm
+                  Jami: {(item.newCost * item.qty).toLocaleString()} so'm
                 </div>
               </div>
             ))
@@ -321,7 +341,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
             <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Ta'minotchi (Ixtiyoriy)</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <select 
+              <select
                 className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={selectedSupplierId}
                 onChange={(e) => setSelectedSupplierId(e.target.value)}
@@ -344,11 +364,10 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                 <button
                   key={method.id}
                   onClick={() => setPaymentMethod(method.id as PaymentMethod)}
-                  className={`py-2 text-sm rounded-lg border ${
-                    paymentMethod === method.id 
-                      ? 'bg-blue-600 text-white border-blue-600' 
+                  className={`py-2 text-sm rounded-lg border ${paymentMethod === method.id
+                      ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-blue-500'
-                  }`}
+                    }`}
                 >
                   {method.label}
                 </button>
@@ -381,83 +400,83 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Shtrix-kod (Skaner)</label>
                 <div className="relative">
-                    <input 
-                        type="text" 
-                        className="w-full border rounded-lg p-2 pl-9" 
-                        value={newProduct.barcode || ''} 
-                        onChange={e => setNewProduct({...newProduct, barcode: e.target.value})} 
-                        placeholder="Skaner qiling..."
-                    />
-                    <ScanBarcode className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg p-2 pl-9"
+                    value={newProduct.barcode || ''}
+                    onChange={e => setNewProduct({ ...newProduct, barcode: e.target.value })}
+                    placeholder="Skaner qiling..."
+                  />
+                  <ScanBarcode className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                 </div>
               </div>
 
               <div className="flex gap-4 items-start">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Kitob rasmi</label>
-                    <input 
-                        type="file" 
-                        ref={fileInputRef}
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                    />
-                    <div className="flex items-center gap-3">
-                        <button 
-                            type="button" 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300"
-                        >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Rasm yuklash
-                        </button>
-                        {newProduct.imageUrl && (
-                            <button 
-                                type="button" 
-                                onClick={() => setNewProduct({...newProduct, imageUrl: ''})}
-                                className="text-red-500 hover:text-red-700 p-2"
-                                title="Rasmni o'chirish"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        )}
-                    </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Kitob rasmi</label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Rasm yuklash
+                    </button>
+                    {newProduct.imageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setNewProduct({ ...newProduct, imageUrl: '' })}
+                        className="text-red-500 hover:text-red-700 p-2"
+                        title="Rasmni o'chirish"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
-                  <div className="w-20 h-28 bg-slate-100 rounded border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
-                      {newProduct.imageUrl ? (
-                          <img src={newProduct.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                      ) : (
-                          <ImageIcon className="w-8 h-8 text-slate-300" />
-                      )}
-                  </div>
+                </div>
+                <div className="w-20 h-28 bg-slate-100 rounded border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
+                  {newProduct.imageUrl ? (
+                    <img src={newProduct.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-slate-300" />
+                  )}
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+                <input type="text" required className="w-full border rounded-lg p-2" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
+                <input type="text" required className="w-full border rounded-lg p-2" value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })} />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Kelish Narxi (Tannarx)</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.priceBuy} onChange={e => setNewProduct({...newProduct, priceBuy: Number(e.target.value)})} />
+                  <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.priceBuy} onChange={e => setNewProduct({ ...newProduct, priceBuy: Number(e.target.value) })} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv Narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.priceSell} onChange={e => setNewProduct({...newProduct, priceSell: Number(e.target.value)})} />
+                  <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.priceSell} onChange={e => setNewProduct({ ...newProduct, priceSell: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Min. Qoldiq</label>
-                    <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.minStock} onChange={e => setNewProduct({...newProduct, minStock: Number(e.target.value)})} />
-                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Min. Qoldiq</label>
+                  <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.minStock} onChange={e => setNewProduct({ ...newProduct, minStock: Number(e.target.value) })} />
+                </div>
               </div>
-              
+
               <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Bekor qilish</button>
                 <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Yaratish va Qo'shish</button>

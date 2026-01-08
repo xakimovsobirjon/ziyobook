@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Product, CartItem, Partner, TransactionType, PaymentMethod, Transaction } from '../types';
 import { Search, Plus, Minus, ShoppingCart, User, CreditCard, Trash, Image as ImageIcon, ScanBarcode, AlertCircle } from 'lucide-react';
-import { generateId } from '../services/storage';
+import { generateId, getPOSSessionData, savePOSSessionData, clearPOSSessionData } from '../services/storage';
 
 interface POSProps {
   products: Product[];
@@ -12,40 +12,57 @@ interface POSProps {
 const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
-  // Load initial state from localStorage if available
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('ziyobook_pos_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(() => {
-    return localStorage.getItem('ziyobook_pos_customer') || '';
-  });
-
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => {
-    const saved = localStorage.getItem('ziyobook_pos_payment');
-    return (saved as PaymentMethod) || PaymentMethod.CASH;
-  });
-
+  // Session state
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
   const [showReceipt, setShowReceipt] = useState<Transaction | null>(null);
 
-  // Save state to localStorage whenever it changes
+  // Load initial state from Firebase
   useEffect(() => {
-    localStorage.setItem('ziyobook_pos_cart', JSON.stringify(cart));
-  }, [cart]);
+    const loadSession = async () => {
+      try {
+        const session = await getPOSSessionData();
+        setCart(session.cart);
+        setSelectedCustomerId(session.customerId);
+        setPaymentMethod(session.paymentMethod);
+      } catch (error) {
+        console.error('Error loading POS session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadSession();
+  }, []);
+
+  // Save session to Firebase with debounce
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const saveSessionDebounced = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      savePOSSessionData({
+        cart,
+        customerId: selectedCustomerId,
+        paymentMethod
+      });
+    }, 500);
+  }, [cart, selectedCustomerId, paymentMethod]);
 
   useEffect(() => {
-    localStorage.setItem('ziyobook_pos_customer', selectedCustomerId);
-  }, [selectedCustomerId]);
-
-  useEffect(() => {
-    localStorage.setItem('ziyobook_pos_payment', paymentMethod);
-  }, [paymentMethod]);
+    if (!isLoading) {
+      saveSessionDebounced();
+    }
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [cart, selectedCustomerId, paymentMethod, isLoading, saveSessionDebounced]);
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -63,7 +80,7 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
     if (!searchTerm) return;
 
     const matchedProduct = products.find(p => p.barcode === searchTerm);
-    
+
     // Allow adding even if stock is 0
     if (matchedProduct) {
       addToCart(matchedProduct);
@@ -73,11 +90,11 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
 
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p => 
-      // Removed "p.stock > 0" filter to show all products
-      (p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       (p.barcode && p.barcode.includes(searchTerm)))
+    return products.filter(p =>
+    // Removed "p.stock > 0" filter to show all products
+    (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.barcode && p.barcode.includes(searchTerm)))
     );
   }, [products, searchTerm]);
 
@@ -100,7 +117,7 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
 
   const totalAmount = cart.reduce((sum, item) => sum + (item.priceSell * item.qty), 0);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return;
     if (paymentMethod === PaymentMethod.DEBT && !selectedCustomerId) {
       alert("Nasiya savdo uchun mijoz tanlanishi shart!");
@@ -138,19 +155,25 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
 
     onTransaction(transaction, updatedProducts, updatedCustomer);
     setShowReceipt(transaction);
-    
-    // Clear State and LocalStorage
+
+    // Clear State and Firebase session
     setCart([]);
     setSelectedCustomerId('');
     setPaymentMethod(PaymentMethod.CASH);
-    localStorage.removeItem('ziyobook_pos_cart');
-    localStorage.removeItem('ziyobook_pos_customer');
-    localStorage.removeItem('ziyobook_pos_payment');
+    await clearPOSSessionData();
   };
 
   const handlePrint = () => {
     window.print();
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+        <div className="text-slate-500">Yuklanmoqda...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
@@ -169,7 +192,7 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
               autoFocus
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400">
-                <ScanBarcode className="w-5 h-5" />
+              <ScanBarcode className="w-5 h-5" />
             </div>
           </div>
         </div>
@@ -179,19 +202,18 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className={`flex flex-col items-start p-3 border rounded-lg hover:shadow-md transition-all text-left h-full ${
-                    product.stock <= 0 ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-emerald-500'
-                }`}
+                className={`flex flex-col items-start p-3 border rounded-lg hover:shadow-md transition-all text-left h-full ${product.stock <= 0 ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-emerald-500'
+                  }`}
               >
                 <div className="w-full aspect-[2/3] bg-white rounded mb-2 flex items-center justify-center overflow-hidden border border-slate-100">
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="text-slate-400 text-xs flex flex-col items-center">
-                         <ImageIcon className="w-8 h-8 mb-1 opacity-50"/>
-                         <span>Rasm yo'q</span>
-                      </div>
-                    )}
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-slate-400 text-xs flex flex-col items-center">
+                      <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
+                      <span>Rasm yo'q</span>
+                    </div>
+                  )}
                 </div>
                 <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
                 <p className="text-xs text-slate-500 mb-1">{product.category}</p>
@@ -205,9 +227,9 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
               </button>
             ))}
             {filteredProducts.length === 0 && (
-                <div className="col-span-full text-center text-slate-400 py-10">
-                    Mahsulot topilmadi
-                </div>
+              <div className="col-span-full text-center text-slate-400 py-10">
+                Mahsulot topilmadi
+              </div>
             )}
           </div>
         </div>
@@ -247,7 +269,7 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
             <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Mijoz (Ixtiyoriy)</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <select 
+              <select
                 className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
@@ -271,11 +293,10 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
                 <button
                   key={method.id}
                   onClick={() => setPaymentMethod(method.id as PaymentMethod)}
-                  className={`py-2 text-sm rounded-lg border ${
-                    paymentMethod === method.id 
-                      ? 'bg-emerald-600 text-white border-emerald-600' 
+                  className={`py-2 text-sm rounded-lg border ${paymentMethod === method.id
+                      ? 'bg-emerald-600 text-white border-emerald-600'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-500'
-                  }`}
+                    }`}
                 >
                   {method.label}
                 </button>
@@ -327,14 +348,14 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
               <div className="flex justify-between text-sm text-slate-500 mt-1">
                 <span>To'lov turi:</span>
                 <span>
-                  {showReceipt.paymentMethod === PaymentMethod.CASH ? 'Naqd' : 
-                   showReceipt.paymentMethod === PaymentMethod.CARD ? 'Karta' : 'Nasiya'}
+                  {showReceipt.paymentMethod === PaymentMethod.CASH ? 'Naqd' :
+                    showReceipt.paymentMethod === PaymentMethod.CARD ? 'Karta' : 'Nasiya'}
                 </span>
               </div>
             </div>
 
             <div className="text-center text-xs text-slate-400 mb-6">
-              Xaridingiz uchun rahmat!<br/>
+              Xaridingiz uchun rahmat!<br />
               Har doim biz bilan bo'ling.
             </div>
 
