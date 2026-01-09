@@ -47,8 +47,8 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="absolute right-2 top-2 p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
           >
@@ -58,31 +58,31 @@ const AIAnalyst: React.FC<AIAnalystProps> = ({ data }) => {
       </div>
 
       {answer && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 animate-fade-in">
-          <h3 className="font-bold text-slate-800 mb-2 flex items-center">
-            <Bot className="w-5 h-5 mr-2 text-indigo-600" />
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 animate-fade-in">
+          <h3 className="font-bold text-slate-800 dark:text-white mb-2 flex items-center">
+            <Bot className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" />
             Javob:
           </h3>
-          <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{answer}</p>
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{answer}</p>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:border-indigo-200 transition-colors"
-             onClick={() => setQuestion("Bugungi kunda qancha foyda ko'rdik?")}>
-          <p className="font-medium text-slate-700">💰 Bugungi foyda qancha?</p>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-500 transition-colors"
+          onClick={() => setQuestion("Bugungi kunda qancha foyda ko'rdik?")}>
+          <p className="font-medium text-slate-700 dark:text-slate-300">💰 Bugungi foyda qancha?</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:border-indigo-200 transition-colors"
-             onClick={() => setQuestion("Qaysi kitoblar 5 tadan kam qoldi?")}>
-          <p className="font-medium text-slate-700">📉 Qaysi tovarlar tugayapti?</p>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-500 transition-colors"
+          onClick={() => setQuestion("Qaysi kitoblar 5 tadan kam qoldi?")}>
+          <p className="font-medium text-slate-700 dark:text-slate-300">📉 Qaysi tovarlar tugayapti?</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:border-indigo-200 transition-colors"
-             onClick={() => setQuestion("Mijozlarning umumiy qarzi qancha?")}>
-          <p className="font-medium text-slate-700">👥 Kimlarda qarz bor?</p>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-500 transition-colors"
+          onClick={() => setQuestion("Mijozlarning umumiy qarzi qancha?")}>
+          <p className="font-medium text-slate-700 dark:text-slate-300">👥 Kimlarda qarz bor?</p>
         </div>
-         <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:border-indigo-200 transition-colors"
-             onClick={() => setQuestion("Eng ko'p sotilayotgan kitob qaysi?")}>
-          <p className="font-medium text-slate-700">🏆 Eng xaridorgir kitob?</p>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-500 transition-colors"
+          onClick={() => setQuestion("Eng ko'p sotilayotgan kitob qaysi?")}>
+          <p className="font-medium text-slate-700 dark:text-slate-300">🏆 Eng xaridorgir kitob?</p>
         </div>
       </div>
     </div>

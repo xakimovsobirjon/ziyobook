@@ -15,6 +15,7 @@ import Login from './components/Login';
 import SuperAdmin from './components/SuperAdmin';
 import Settings from './components/Settings';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { getStoreData, saveStoreData, subscribeToStoreData } from './services/storage';
 import { updateAdminStoreName } from './services/auth';
 import { StoreData, Product, Partner, Transaction, Employee, TransactionType, Category } from './types';
@@ -251,7 +252,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -260,17 +261,17 @@ const AppContent: React.FC = () => {
       />
 
       <main className="flex-1 lg:ml-64 transition-all duration-300">
-        <header className="bg-white shadow-sm border-b border-slate-200 p-4 sticky top-0 z-20 flex justify-between items-center no-print">
+        <header className="bg-white dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-700 p-4 sticky top-0 z-20 flex justify-between items-center no-print">
           <div className="flex items-center">
             <button onClick={() => setIsMobileOpen(true)} className="p-2 mr-4 text-slate-600 lg:hidden hover:bg-slate-100 rounded-lg">
               <Menu className="w-6 h-6" />
             </button>
-            <h1 className="text-xl font-bold text-slate-800 capitalize">{getTitle()}</h1>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-white capitalize">{getTitle()}</h1>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-sm text-right hidden sm:block">
-              <p className="font-bold text-slate-800">{adminData?.storeName || 'Do\'kon'}</p>
-              <p className="text-xs text-slate-500">{adminData?.email}</p>
+              <p className="font-bold text-slate-800 dark:text-white">{adminData?.storeName || 'Do\'kon'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{adminData?.email}</p>
             </div>
             <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold border border-emerald-200">
               {adminData?.storeName?.charAt(0)?.toUpperCase() || 'A'}
@@ -291,7 +292,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AuthGate />
+      <ThemeProvider>
+        <AuthGate />
+      </ThemeProvider>
     </AuthProvider>
   );
 };

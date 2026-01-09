@@ -1,5 +1,6 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingCart, BookOpen, Users, BarChart3, Bot, Settings, History, Wallet, Briefcase, PackagePlus, Shield } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
+import { LayoutDashboard, ShoppingCart, BookOpen, Users, BarChart3, Bot, Settings, History, Wallet, Briefcase, PackagePlus, Shield, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
@@ -11,6 +12,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isMobileOpen, setIsMobileOpen }) => {
   const { adminData } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+
   const menuItems = [
     { id: 'dashboard', label: 'Bosh sahifa', icon: LayoutDashboard },
     { id: 'pos', label: 'Savdo (POS)', icon: ShoppingCart },
@@ -33,8 +36,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isMobileOpen
         />
       )}
 
-      <aside className={`fixed top-0 left-0 z-30 h-screen transition-transform transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 w-64 bg-slate-900 text-white flex flex-col`}>
-        <div className="p-6 border-b border-slate-800 flex items-center justify-center">
+      <aside className={`fixed top-0 left-0 z-30 h-screen transition-transform transform ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 w-64 bg-slate-900 dark:bg-slate-950 text-white flex flex-col border-r border-slate-800 dark:border-slate-800`}>
+        <div className="p-6 border-b border-slate-800 dark:border-slate-800 flex items-center justify-center">
           <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center mr-3">
             <BookOpen className="text-white w-5 h-5" />
           </div>
@@ -63,7 +66,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isMobileOpen
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-slate-800 space-y-2">
+        <div className="p-4 border-t border-slate-800 dark:border-slate-800 space-y-2">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center w-full px-4 py-3 rounded-lg transition-colors cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5 mr-3" /> : <Moon className="w-5 h-5 mr-3" />}
+            <span className="font-medium">{theme === 'dark' ? 'Kunduzgi rejim' : 'Tungi rejim'}</span>
+          </button>
           {adminData?.isSuperAdmin && (
             <button
               onClick={() => window.location.href = '/?superadmin=true'}

@@ -146,9 +146,9 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800">Tarix</h2>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Tarix</h2>
         <select
-          className="border rounded-lg p-2 bg-white"
+          className="border rounded-lg p-2 bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white"
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
         >
@@ -161,92 +161,94 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
         </select>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-slate-50 text-slate-600">
-            <tr>
-              <th className="p-4 font-medium">Sana</th>
-              <th className="p-4 font-medium">Turi</th>
-              <th className="p-4 font-medium">Izoh / Mahsulotlar</th>
-              <th className="p-4 font-medium text-right">Summa</th>
-              <th className="p-4 font-medium text-center">Amallar</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(t => (
-              <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="p-4 text-slate-600 whitespace-nowrap">
-                  {new Date(t.date).toLocaleString()}
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center space-x-2">
-                    {getIcon(t.type)}
-                    <span className="font-medium text-slate-700">{getLabel(t.type)}</span>
-                  </div>
-                </td>
-                <td className="p-4 text-slate-600 max-w-md">
-                  {t.items && t.items.length > 0 ? (
-                    <div className="text-sm">
-                      {t.items.map(i => `${i.name} (${i.qty})`).join(', ')}
-                    </div>
-                  ) : (
-                    <span className="italic">{t.note || '-'}</span>
-                  )}
-                </td>
-                <td className={`p-4 text-right font-bold ${[TransactionType.SALE, TransactionType.DEBT_PAYMENT].includes(t.type) ? 'text-emerald-600' : 'text-slate-800'
-                  }`}>
-                  {t.totalAmount.toLocaleString()} so'm
-                </td>
-                <td className="p-4 text-center">
-                  <div className="flex justify-center space-x-2">
-                    <button
-                      onClick={() => setSelectedTransaction(t)}
-                      className="p-2 text-blue-500 hover:bg-blue-50 rounded transition-colors"
-                      title="Ko'rish"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    {onEditTransaction && (
-                      <button
-                        onClick={() => startEditing(t)}
-                        className="p-2 text-amber-500 hover:bg-amber-50 rounded transition-colors"
-                        title="Tahrirlash"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setDeleteConfirm(t.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors"
-                      title="O'chirish (Bekor qilish)"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400">
               <tr>
-                <td colSpan={5} className="p-8 text-center text-slate-400">Ma'lumot topilmadi</td>
+                <th className="p-4 font-medium">Sana</th>
+                <th className="p-4 font-medium">Turi</th>
+                <th className="p-4 font-medium">Izoh / Mahsulotlar</th>
+                <th className="p-4 font-medium text-right">Summa</th>
+                <th className="p-4 font-medium text-center">Amallar</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map(t => (
+                <tr key={t.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                  <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                    {new Date(t.date).toLocaleString()}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center space-x-2">
+                      {getIcon(t.type)}
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{getLabel(t.type)}</span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-slate-600 dark:text-slate-400 max-w-md">
+                    {t.items && t.items.length > 0 ? (
+                      <div className="text-sm">
+                        {t.items.map(i => `${i.name} (${i.qty})`).join(', ')}
+                      </div>
+                    ) : (
+                      <span className="italic">{t.note || '-'}</span>
+                    )}
+                  </td>
+                  <td className={`p-4 text-right font-bold ${[TransactionType.SALE, TransactionType.DEBT_PAYMENT].includes(t.type) ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-white'
+                    }`}>
+                    {t.totalAmount.toLocaleString()} so'm
+                  </td>
+                  <td className="p-4 text-center">
+                    <div className="flex justify-center space-x-2">
+                      <button
+                        onClick={() => setSelectedTransaction(t)}
+                        className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        title="Ko'rish"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      {onEditTransaction && (
+                        <button
+                          onClick={() => startEditing(t)}
+                          className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded transition-colors"
+                          title="Tahrirlash"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setDeleteConfirm(t.id)}
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                        title="O'chirish (Bekor qilish)"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-400">Ma'lumot topilmadi</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* View Modal */}
       {selectedTransaction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold flex items-center gap-2">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
                 {getIcon(selectedTransaction.type)}
                 {getLabel(selectedTransaction.type)} tafsilotlari
               </h3>
               <button
                 onClick={() => setSelectedTransaction(null)}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -254,33 +256,33 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
             {/* Content same as before... */}
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-lg">
-                  <span className="text-sm text-slate-500 block mb-1">Sana</span>
-                  <span className="font-medium">
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg">
+                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1">Sana</span>
+                  <span className="font-medium text-slate-800 dark:text-white">
                     {new Date(selectedTransaction.date).toLocaleString()}
                   </span>
                 </div>
-                <div className="bg-slate-50 p-4 rounded-lg">
-                  <span className="text-sm text-slate-500 block mb-1">ID</span>
-                  <span className="font-mono text-sm">{selectedTransaction.id}</span>
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg">
+                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1">ID</span>
+                  <span className="font-mono text-sm text-slate-800 dark:text-white">{selectedTransaction.id}</span>
                 </div>
                 {/* ... existing details ... */}
-                <div className="bg-slate-50 p-4 rounded-lg">
-                  <span className="text-sm text-slate-500 block mb-1">To'lov Turi</span>
-                  <span className="font-medium">{selectedTransaction.paymentMethod || '-'}</span>
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg">
+                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1">To'lov Turi</span>
+                  <span className="font-medium text-slate-800 dark:text-white">{selectedTransaction.paymentMethod || '-'}</span>
                 </div>
-                <div className="bg-slate-50 p-4 rounded-lg">
-                  <span className="text-sm text-slate-500 block mb-1">Jami Summa</span>
-                  <span className="font-medium">{selectedTransaction.totalAmount.toLocaleString()} so'm</span>
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg">
+                  <span className="text-sm text-slate-500 dark:text-slate-400 block mb-1">Jami Summa</span>
+                  <span className="font-medium text-slate-800 dark:text-white">{selectedTransaction.totalAmount.toLocaleString()} so'm</span>
                 </div>
               </div>
               {/* ... */}
               {selectedTransaction.items && (
                 <div>
-                  <h4 className="font-semibold mb-3 text-slate-700">Mahsulotlar</h4>
-                  <div className="border rounded-lg overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-50">
+                  <h4 className="font-semibold mb-3 text-slate-700 dark:text-slate-200">Mahsulotlar</h4>
+                  <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm text-slate-800 dark:text-slate-200">
+                      <thead className="bg-slate-50 dark:bg-slate-700">
                         <tr>
                           <th className="p-3 text-left">Nomi</th>
                           <th className="p-3 text-right">
@@ -316,7 +318,7 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
             <div className="mt-8 flex justify-end">
               <button
                 onClick={() => setSelectedTransaction(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium"
               >
                 Yopish
               </button>
@@ -327,16 +329,16 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
 
       {/* Edit Modal */}
       {editingTransaction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold flex items-center gap-2">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
                 <Pencil className="w-5 h-5 text-amber-500" />
                 Tranzaksiyani tahrirlash
               </h3>
               <button
                 onClick={() => setEditingTransaction(null)}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -344,18 +346,18 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Sana</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sana</label>
                 <input
                   type="datetime-local"
-                  className="w-full border rounded-lg p-2"
+                  className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                   value={editForm.date}
                   onChange={e => setEditForm({ ...editForm, date: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Izoh</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Izoh</label>
                 <textarea
-                  className="w-full border rounded-lg p-2"
+                  className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                   value={editForm.note}
                   onChange={e => setEditForm({ ...editForm, note: e.target.value })}
                 />
@@ -368,10 +370,10 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
                 editingTransaction.type === TransactionType.DEBT_PAYMENT
               ) && (
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Summa (so'm)</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Summa (so'm)</label>
                     <input
                       type="number"
-                      className="w-full border rounded-lg p-2"
+                      className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                       value={editForm.totalAmount}
                       onChange={e => setEditForm({ ...editForm, totalAmount: Number(e.target.value) })}
                     />
@@ -380,12 +382,12 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
 
               {editForm.items.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Mahsulotlar ({editingTransaction?.type === TransactionType.PURCHASE ? 'Kelish narxi' : 'Sotuv narxi'} va Sonini o'zgartirish)
                   </label>
-                  <div className="border rounded-lg overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-50">
+                  <div className="border rounded-lg overflow-hidden dark:border-slate-600">
+                    <table className="w-full text-sm text-slate-800 dark:text-slate-200">
+                      <thead className="bg-slate-50 dark:bg-slate-700">
                         <tr>
                           <th className="p-3 text-left">Mahsulot</th>
                           <th className="p-3 text-center">
@@ -395,14 +397,14 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
                           <th className="p-3 text-center">Jami</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y">
+                      <tbody className="divide-y dark:divide-slate-700">
                         {editForm.items.map(item => (
                           <tr key={item.id}>
                             <td className="p-3">{item.name}</td>
                             <td className="p-3 text-center">
                               <input
                                 type="number"
-                                className="w-24 border rounded p-1 text-center"
+                                className="w-24 border rounded p-1 text-center dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                                 value={item.price}
                                 onChange={(e) => updateItemPrice(item.id, Number(e.target.value))}
                               />
@@ -410,14 +412,14 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
                             <td className="p-3 flex justify-center items-center gap-2">
                               <button
                                 onClick={() => updateItemQty(item.id, -1)}
-                                className="p-1 bg-slate-100 rounded hover:bg-slate-200"
+                                className="p-1 bg-slate-100 dark:bg-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-600 dark:text-white"
                               >
                                 <Minus className="w-3 h-3" />
                               </button>
                               <span className="w-8 text-center font-bold">{item.qty}</span>
                               <button
                                 onClick={() => updateItemQty(item.id, 1)}
-                                className="p-1 bg-slate-100 rounded hover:bg-slate-200"
+                                className="p-1 bg-slate-100 dark:bg-slate-700 rounded hover:bg-slate-200 dark:hover:bg-slate-600 dark:text-white"
                               >
                                 <Plus className="w-3 h-3" />
                               </button>
@@ -434,7 +436,7 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
               <div className="pt-4 flex justify-end gap-2">
                 <button
                   onClick={() => setEditingTransaction(null)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700 rounded-lg"
                 >
                   Bekor qilish
                 </button>
@@ -460,19 +462,19 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl">
             <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-600 dark:text-red-500" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Tranzaksiyani o'chirish</h3>
-              <p className="text-slate-600 mb-6">Bu amalni bekor qilmoqchimisiz? Ombor va kassa qayta hisoblanadi.</p>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Tranzaksiyani o'chirish</h3>
+              <p className="text-slate-600 dark:text-slate-300 mb-6">Bu amalni bekor qilmoqchimisiz? Ombor va kassa qayta hisoblanadi.</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteConfirm(null)}
                   disabled={isSaving}
-                  className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 rounded-lg disabled:opacity-50"
                 >
                   Bekor qilish
                 </button>

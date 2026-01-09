@@ -205,15 +205,15 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
       {/* Product List */}
-      <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200">
+      <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Shtrix-kodni skaner qiling yoki nomini yozing..."
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               autoFocus
@@ -229,7 +229,9 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
               <div key={product.id} className="relative">
                 <button
                   onClick={() => addToCart(product)}
-                  className={`flex flex-col items-start p-3 border rounded-lg hover:shadow-md transition-all text-left h-full w-full ${product.stock <= 0 ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-emerald-500'
+                  className={`flex flex-col items-start p-3 border rounded-lg hover:shadow-md transition-all text-left h-full w-full ${product.stock <= 0
+                    ? 'border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'
+                    : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 hover:border-emerald-500 dark:hover:border-emerald-500'
                     }`}
                 >
                   <div className="w-full aspect-[2/3] bg-white rounded mb-2 flex items-center justify-center overflow-hidden border border-slate-100">
@@ -242,8 +244,8 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
                       </div>
                     )}
                   </div>
-                  <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
-                  <p className="text-xs text-slate-500 mb-1">{categories.find(c => c.id === product.category)?.name || product.category}</p>
+                  <h3 className="font-semibold text-slate-800 dark:text-white line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{categories.find(c => c.id === product.category)?.name || product.category}</p>
                   <div className="mt-auto pt-2 w-full">
                     <p className="font-bold text-emerald-600">{product.priceSell.toLocaleString()} so'm</p>
                     <div className={`text-xs mt-0.5 flex items-center ${product.stock <= 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
@@ -271,9 +273,9 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
       </div>
 
       {/* Cart & Checkout */}
-      <div className="w-full lg:w-96 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
-        <div className="p-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-          <h2 className="font-bold text-lg flex items-center text-slate-800">
+      <div className="w-full lg:w-96 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 rounded-t-xl">
+          <h2 className="font-bold text-lg flex items-center text-slate-800 dark:text-white">
             <ShoppingCart className="w-5 h-5 mr-2" /> Savat
           </h2>
         </div>
@@ -283,29 +285,29 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
             <div className="text-center text-slate-400 mt-10">Savat bo'sh</div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="flex justify-between items-center bg-white border border-slate-100 p-2 rounded-lg shadow-sm">
+              <div key={item.id} className="flex justify-between items-center bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 p-2 rounded-lg shadow-sm">
                 <div className="flex-1 pr-2">
-                  <h4 className="text-sm font-medium text-slate-800 line-clamp-1">{item.name}</h4>
-                  <p className="text-xs text-emerald-600 font-semibold">{item.priceSell.toLocaleString()} x {item.qty}</p>
+                  <h4 className="text-sm font-medium text-slate-800 dark:text-white line-clamp-1">{item.name}</h4>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{item.priceSell.toLocaleString()} x {item.qty}</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button onClick={() => updateQty(item.id, -1)} className="p-1 bg-slate-100 rounded hover:bg-slate-200"><Minus className="w-3 h-3" /></button>
-                  <span className="text-sm w-4 text-center">{item.qty}</span>
-                  <button onClick={() => updateQty(item.id, 1)} className="p-1 bg-slate-100 rounded hover:bg-slate-200"><Plus className="w-3 h-3" /></button>
-                  <button onClick={() => removeFromCart(item.id)} className="p-1 text-red-500 hover:bg-red-50 rounded ml-1"><Trash className="w-3 h-3" /></button>
+                  <button onClick={() => updateQty(item.id, -1)} className="p-1 bg-slate-100 dark:bg-slate-600 rounded hover:bg-slate-200 dark:hover:bg-slate-500 text-slate-600 dark:text-slate-300"><Minus className="w-3 h-3" /></button>
+                  <span className="text-sm w-4 text-center text-slate-800 dark:text-white">{item.qty}</span>
+                  <button onClick={() => updateQty(item.id, 1)} className="p-1 bg-slate-100 dark:bg-slate-600 rounded hover:bg-slate-200 dark:hover:bg-slate-500 text-slate-600 dark:text-slate-300"><Plus className="w-3 h-3" /></button>
+                  <button onClick={() => removeFromCart(item.id)} className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded ml-1"><Trash className="w-3 h-3" /></button>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        <div className="p-4 border-t border-slate-200 space-y-4 bg-slate-50">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-4 bg-slate-50 dark:bg-slate-900/50">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Mijoz (Ixtiyoriy)</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Mijoz (Ixtiyoriy)</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
               <select
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-700 dark:text-white"
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
               >
@@ -318,7 +320,7 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">To'lov turi</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">To'lov turi</label>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: PaymentMethod.CASH, label: 'Naqd' },
@@ -328,9 +330,9 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
                 <button
                   key={method.id}
                   onClick={() => setPaymentMethod(method.id as PaymentMethod)}
-                  className={`py-2 text-sm rounded-lg border ${paymentMethod === method.id
+                  className={`py-2 text-sm rounded-lg border transition-colors ${paymentMethod === method.id
                     ? 'bg-emerald-600 text-white border-emerald-600'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-500'
+                    : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-emerald-500'
                     }`}
                 >
                   {method.label}
@@ -340,8 +342,8 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
           </div>
 
           <div className="flex justify-between items-end pt-2">
-            <span className="text-slate-500 text-sm">Jami summa:</span>
-            <span className="text-2xl font-bold text-slate-800">{totalAmount.toLocaleString()} so'm</span>
+            <span className="text-slate-500 dark:text-slate-400 text-sm">Jami summa:</span>
+            <span className="text-2xl font-bold text-slate-800 dark:text-white">{totalAmount.toLocaleString()} so'm</span>
           </div>
 
           <button
@@ -358,19 +360,19 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
       {/* Receipt Modal */}
       {showReceipt && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
-          <div className="bg-white p-6 rounded-xl max-w-sm w-full shadow-2xl print:shadow-none print:w-full print:max-w-none">
-            <div className="text-center mb-6 border-b-2 border-dashed border-slate-300 pb-4">
-              <h1 className="text-xl font-bold uppercase tracking-wider">ZiyoBook</h1>
-              <p className="text-slate-500 text-sm">Kitob do'koni</p>
-              <p className="text-slate-400 text-xs mt-1">{new Date(showReceipt.date).toLocaleString()}</p>
-              <p className="text-slate-400 text-xs">Chek #{showReceipt.id.slice(-6)}</p>
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl max-w-sm w-full shadow-2xl print:shadow-none print:w-full print:max-w-none print:text-black">
+            <div className="text-center mb-6 border-b-2 border-dashed border-slate-300 dark:border-slate-600 pb-4">
+              <h1 className="text-xl font-bold uppercase tracking-wider text-slate-800 dark:text-white print:text-black">ZiyoBook</h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm print:text-gray-600">Kitob do'koni</p>
+              <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 print:text-gray-500">{new Date(showReceipt.date).toLocaleString()}</p>
+              <p className="text-slate-400 dark:text-slate-500 text-xs print:text-gray-500">Chek #{showReceipt.id.slice(-6)}</p>
             </div>
 
             <div className="space-y-3 mb-6">
               {showReceipt.items?.map((item, idx) => (
                 <div key={idx} className="flex justify-between text-sm">
-                  <span className="text-slate-800">{item.name} <span className="text-xs text-slate-500">x{item.qty}</span></span>
-                  <span className="font-medium">{(item.priceSell * item.qty).toLocaleString()}</span>
+                  <span className="text-slate-800 dark:text-white print:text-black">{item.name} <span className="text-xs text-slate-500 dark:text-slate-400 print:text-gray-600">x{item.qty}</span></span>
+                  <span className="font-medium text-slate-800 dark:text-white print:text-black">{(item.priceSell * item.qty).toLocaleString()}</span>
                 </div>
               ))}
             </div>
@@ -405,38 +407,38 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
       {/* Edit Product Modal */}
       {editingProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-slate-800">Mahsulotni tahrirlash</h2>
-              <button onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="p-1 hover:bg-slate-100 rounded">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white">Mahsulotni tahrirlash</h2>
+              <button onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={editFormData.name || ''} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nomi</label>
+                <input type="text" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.name || ''} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategoriya</label>
                 <div className="relative">
                   <input
                     type="text"
-                    className="w-full border rounded-lg p-2"
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                     placeholder="Kategoriya qidirish..."
                     value={categorySearch || categories.find(c => c.id === editFormData.category)?.name || ''}
                     onChange={e => { setCategorySearch(e.target.value); setShowCategoryDropdown(true); }}
                     onFocus={() => setShowCategoryDropdown(true)}
                   />
                   {showCategoryDropdown && (
-                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                       {categories.filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase())).map(cat => (
-                        <button key={cat.id} type="button" className={`w-full text-left px-3 py-2 hover:bg-slate-100 ${editFormData.category === cat.id ? 'bg-emerald-50 text-emerald-700' : ''}`}
+                        <button key={cat.id} type="button" className={`w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-600 dark:text-white ${editFormData.category === cat.id ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : ''}`}
                           onClick={() => { setEditFormData({ ...editFormData, category: cat.id }); setCategorySearch(''); setShowCategoryDropdown(false); }}>
                           {cat.name}
                         </button>
                       ))}
-                      <button type="button" className="w-full text-left px-3 py-2 text-blue-600 hover:bg-blue-50 border-t"
+                      <button type="button" className="w-full text-left px-3 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-t dark:border-slate-600"
                         onClick={() => { const name = prompt('Yangi kategoriya nomi:'); if (name?.trim()) { const newCat = { id: generateId(), name: name.trim() }; onUpdateCategories([...categories, newCat]); setEditFormData({ ...editFormData, category: newCat.id }); setShowCategoryDropdown(false); } }}>
                         + Yangi kategoriya
                       </button>
@@ -447,26 +449,26 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Tannarx</label>
-                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.priceBuy || 0} onChange={e => setEditFormData({ ...editFormData, priceBuy: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tannarx</label>
+                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.priceBuy || 0} onChange={e => setEditFormData({ ...editFormData, priceBuy: Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={editFormData.priceSell || 0} onChange={e => setEditFormData({ ...editFormData, priceSell: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv narxi</label>
+                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.priceSell || 0} onChange={e => setEditFormData({ ...editFormData, priceSell: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Qoldiq</label>
-                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.stock || 0} onChange={e => setEditFormData({ ...editFormData, stock: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Qoldiq</label>
+                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.stock || 0} onChange={e => setEditFormData({ ...editFormData, stock: Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Min. chegara</label>
-                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.minStock || 0} onChange={e => setEditFormData({ ...editFormData, minStock: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min. chegara</label>
+                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.minStock || 0} onChange={e => setEditFormData({ ...editFormData, minStock: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="flex gap-2 pt-4">
-                <button type="button" onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg">Bekor qilish</button>
+                <button type="button" onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="flex-1 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg">Bekor qilish</button>
                 <button type="submit" className="flex-1 py-2 bg-emerald-600 text-white rounded-lg flex items-center justify-center gap-2">
                   <Check className="w-4 h-4" /> Saqlash
                 </button>

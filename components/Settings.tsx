@@ -98,18 +98,18 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-            <h2 className="text-2xl font-bold text-slate-800">Sozlamalar</h2>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Sozlamalar</h2>
 
             {/* Account Profile Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-slate-50">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
                             <Store className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-slate-800">Do'kon Ma'lumotlari</h3>
-                            <p className="text-sm text-slate-500">Do'kon nomi va hisob ma'lumotlari</p>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Do'kon Ma'lumotlari</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Do'kon nomi va hisob ma'lumotlari</p>
                         </div>
                     </div>
                 </div>
@@ -117,7 +117,7 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                 <div className="p-6">
                     <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Email
                             </label>
                             <div className="relative">
@@ -125,15 +125,15 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                                     type="email"
                                     value={adminData?.email || ''}
                                     disabled
-                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-500 cursor-not-allowed"
+                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 cursor-not-allowed"
                                 />
-                                <User className="w-5 h-5 text-slate-400 absolute left-3 top-2.5" />
+                                <User className="w-5 h-5 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
                             </div>
                             <p className="text-xs text-slate-400 mt-1">Email manzilini o'zgartirib bo'lmaydi</p>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Do'kon Nomi
                             </label>
                             <div className="relative">
@@ -141,10 +141,10 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                                     type="text"
                                     value={storeName}
                                     onChange={(e) => setStoreName(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                    className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-700 dark:text-white"
                                     placeholder="Do'kon nomini kiriting"
                                 />
-                                <Store className="w-5 h-5 text-slate-400 absolute left-3 top-2.5" />
+                                <Store className="w-5 h-5 text-slate-400 dark:text-slate-500 absolute left-3 top-2.5" />
                             </div>
                         </div>
 
@@ -155,7 +155,7 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                         )}
 
                         {profileSuccess && (
-                            <div className="text-emerald-600 text-sm flex items-center gap-2">
+                            <div className="text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-2">
                                 <Check className="w-4 h-4" /> Muvaffaqiyatli saqlandi
                             </div>
                         )}
@@ -173,15 +173,15 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
             </div>
 
             {/* Security Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-slate-50">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                        <div className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
                             <Lock className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-slate-800">Xavfsizlik</h3>
-                            <p className="text-sm text-slate-500">Parolni o'zgartirish</p>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Xavfsizlik</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Parolni o'zgartirish</p>
                         </div>
                     </div>
                 </div>
@@ -189,42 +189,42 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                 <div className="p-6">
                     <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Eski Parol
                             </label>
                             <input
                                 type="password"
                                 value={currentPassword}
                                 onChange={(e) => setCurrentPassword(e.target.value)}
-                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-700 dark:text-white"
                                 placeholder="Eski parolni kiriting"
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Yangi Parol
                             </label>
                             <input
                                 type="password"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-700 dark:text-white"
                                 placeholder="Yangi parolni kiriting"
                                 minLength={6}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Parolni Tasdiqlash
                             </label>
                             <input
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-slate-700 dark:text-white"
                                 placeholder="Yangi parolni qayta kiriting"
                                 minLength={6}
                             />
@@ -237,7 +237,7 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                         )}
 
                         {passwordSuccess && (
-                            <div className="text-emerald-600 text-sm flex items-center gap-2">
+                            <div className="text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-2">
                                 <Check className="w-4 h-4" /> Parol muvaffaqiyatli yangilandi
                             </div>
                         )}
@@ -255,20 +255,20 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
             </div>
 
             {/* Logout Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-red-50">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-red-50 dark:bg-red-900/20">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 text-red-600 rounded-lg">
+                        <div className="p-2 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg">
                             <LogOut className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-red-700">Tizimdan Chiqish</h3>
-                            <p className="text-sm text-red-500">Sessiyani yakunlash</p>
+                            <h3 className="text-lg font-bold text-red-700 dark:text-red-400">Tizimdan Chiqish</h3>
+                            <p className="text-sm text-red-500 dark:text-red-300">Sessiyani yakunlash</p>
                         </div>
                     </div>
                 </div>
                 <div className="p-6">
-                    <p className="text-slate-600 mb-4">
+                    <p className="text-slate-600 dark:text-slate-300 mb-4">
                         Tizimdan chiqmoqchimisiz? Saqlanmagan ma'lumotlar yo'qolishi mumkin.
                     </p>
                     <button

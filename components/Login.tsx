@@ -52,29 +52,29 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+        <div className="min-h-screen bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 dark:from-emerald-900 dark:via-teal-900 dark:to-cyan-950 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <BookOpen className="w-10 h-10 text-white" />
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-800">ZiyoBook</h1>
-                    <p className="text-slate-500 text-sm mt-1">Kitob Do'koni Tizimi</p>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">ZiyoBook</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Kitob Do'koni Tizimi</p>
                 </div>
 
                 {/* Error Message */}
                 {(error || localError) && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-3">
                         <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-                        <p className="text-red-700 text-sm">{error || localError}</p>
+                        <p className="text-red-700 dark:text-red-400 text-sm">{error || localError}</p>
                     </div>
                 )}
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Email
                         </label>
                         <div className="relative">
@@ -83,7 +83,7 @@ const Login: React.FC = () => {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                className="w-full pl-11 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
                                 placeholder="admin@example.com"
                                 disabled={loading}
                             />
@@ -92,13 +92,13 @@ const Login: React.FC = () => {
 
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <label className="block text-sm font-medium text-slate-700">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                                 Parol
                             </label>
                             <button
                                 type="button"
                                 onClick={() => setShowResetModal(true)}
-                                className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                                className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium"
                             >
                                 Parolni unutdingizmi?
                             </button>
@@ -109,7 +109,7 @@ const Login: React.FC = () => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                className="w-full pl-11 pr-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all bg-white dark:bg-slate-700 dark:text-white dark:placeholder-slate-400"
                                 placeholder="••••••••"
                                 disabled={loading}
                             />
@@ -139,21 +139,21 @@ const Login: React.FC = () => {
 
                 {/* Reset Password Modal */}
                 {showResetModal && (
-                    <div className="absolute inset-0 z-20 bg-white rounded-2xl p-8 flex flex-col animate-in fade-in duration-200">
+                    <div className="absolute inset-0 z-20 bg-white dark:bg-slate-800 rounded-2xl p-8 flex flex-col animate-in fade-in duration-200">
                         <div className="text-center mb-6">
-                            <h2 className="text-xl font-bold text-slate-800">Parolni tiklash</h2>
-                            <p className="text-slate-500 text-sm mt-1">Email manzilingizni kiriting</p>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Parolni tiklash</h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Email manzilingizni kiriting</p>
                         </div>
 
                         {resetStatus === 'success' ? (
                             <div className="flex-1 flex flex-col items-center justify-center py-4">
                                 <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
-                                    <Mail className="w-8 h-8 text-emerald-600" />
+                                    <Mail className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                                 </div>
-                                <p className="text-emerald-700 text-center mb-6 text-sm">{resetMessage}</p>
+                                <p className="text-emerald-700 dark:text-emerald-400 text-center mb-6 text-sm">{resetMessage}</p>
                                 <button
                                     onClick={() => { setShowResetModal(false); setResetStatus('idle'); }}
-                                    className="w-full bg-slate-100 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-200 transition-all"
+                                    className="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
                                 >
                                     Login sahifasiga qaytish
                                 </button>
@@ -166,7 +166,7 @@ const Login: React.FC = () => {
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                         Email
                                     </label>
                                     <input
@@ -174,7 +174,7 @@ const Login: React.FC = () => {
                                         required
                                         value={resetEmail}
                                         onChange={(e) => setResetEmail(e.target.value)}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-700 dark:text-white"
                                         placeholder="admin@example.com"
                                     />
                                 </div>
@@ -188,7 +188,7 @@ const Login: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowResetModal(false)}
-                                    className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-medium hover:bg-slate-200 transition-all"
+                                    className="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-3 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
                                 >
                                     Bekor qilish
                                 </button>

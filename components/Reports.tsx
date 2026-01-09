@@ -56,21 +56,21 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-        <h2 className="text-xl font-bold text-slate-800 mb-4 md:mb-0">Moliya Hisoboti</h2>
+      <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4 md:mb-0">Moliya Hisoboti</h2>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-slate-500" />
-            <input 
-              type="date" 
-              className="border rounded-lg p-2 text-sm"
+            <Calendar className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            <input
+              type="date"
+              className="border rounded-lg p-2 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
             <span className="text-slate-400">-</span>
-            <input 
-              type="date" 
-              className="border rounded-lg p-2 text-sm"
+            <input
+              type="date"
+              className="border rounded-lg p-2 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
@@ -79,35 +79,35 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
-          <p className="text-slate-500 text-sm font-medium">Jami Savdo</p>
-          <p className="text-2xl font-bold text-slate-800 mt-1">{stats.totalSales.toLocaleString()}</p>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 border-l-emerald-500">
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Jami Savdo</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-white mt-1">{stats.totalSales.toLocaleString()}</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-500">
-          <p className="text-slate-500 text-sm font-medium">Brutto Foyda (Ustama)</p>
-          <p className="text-2xl font-bold text-indigo-600 mt-1">{stats.totalProfit.toLocaleString()}</p>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 border-l-indigo-500">
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Brutto Foyda (Ustama)</p>
+          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{stats.totalProfit.toLocaleString()}</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-red-500">
-          <p className="text-slate-500 text-sm font-medium">Jami Harajatlar</p>
-          <p className="text-2xl font-bold text-red-600 mt-1">{stats.totalExpenses.toLocaleString()}</p>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 border-l-red-500">
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Jami Harajatlar</p>
+          <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">{stats.totalExpenses.toLocaleString()}</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
-          <p className="text-slate-500 text-sm font-medium">Sof Foyda</p>
-          <p className={`text-2xl font-bold mt-1 ${stats.netProfit >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 border-l-blue-500">
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Sof Foyda</p>
+          <p className={`text-2xl font-bold mt-1 ${stats.netProfit >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500 dark:text-red-400'}`}>
             {stats.netProfit.toLocaleString()}
           </p>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-96">
-        <h3 className="font-bold text-slate-700 mb-4">Moliyaviy Ko'rsatkichlar Grafikasi</h3>
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 h-96">
+        <h3 className="font-bold text-slate-700 dark:text-white mb-4">Moliyaviy Ko'rsatkichlar Grafikasi</h3>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="name" stroke="#64748b" />
-            <YAxis stroke="#64748b" tickFormatter={(val) => `${val/1000}k`} />
-            <Tooltip 
-              cursor={{fill: '#f8fafc'}}
+            <YAxis stroke="#64748b" tickFormatter={(val) => `${val / 1000}k`} />
+            <Tooltip
+              cursor={{ fill: '#f8fafc' }}
               formatter={(value: number) => [`${value.toLocaleString()} so'm`, 'Summa']}
             />
             <Bar dataKey="amount" radius={[4, 4, 0, 0]}>

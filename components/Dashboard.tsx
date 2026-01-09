@@ -59,26 +59,26 @@ const Dashboard: React.FC<DashboardProps> = ({ products = [], transactions = [],
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">Boshqaruv Paneli</h2>
+      <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Boshqaruv Paneli</h2>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-500 text-sm font-medium">Bugungi Savdo</h3>
+            <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Bugungi Savdo</h3>
             <div className="p-2 bg-blue-100 rounded-lg">
               <DollarSign className="w-5 h-5 text-blue-600" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-slate-800">{stats.dailySales.toLocaleString()} so'm</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.dailySales.toLocaleString()} so'm</p>
           <p className="text-xs text-green-500 mt-1 flex items-center">
             <TrendingUp className="w-3 h-3 mr-1" /> Faol
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-500 text-sm font-medium">Oylik Sof Foyda</h3>
+            <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Oylik Sof Foyda</h3>
             <div className="p-2 bg-emerald-100 rounded-lg">
               <TrendingUp className="w-5 h-5 text-emerald-600" />
             </div>
@@ -86,9 +86,9 @@ const Dashboard: React.FC<DashboardProps> = ({ products = [], transactions = [],
           <p className="text-2xl font-bold text-emerald-600">{stats.monthlyProfit.toLocaleString()} so'm</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-500 text-sm font-medium">Mijozlar Qarzi</h3>
+            <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Mijozlar Qarzi</h3>
             <div className="p-2 bg-amber-100 rounded-lg">
               <Users className="w-5 h-5 text-amber-600" />
             </div>
@@ -97,9 +97,9 @@ const Dashboard: React.FC<DashboardProps> = ({ products = [], transactions = [],
           <p className="text-xs text-slate-400 mt-1">Undirilishi kerak</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-500 text-sm font-medium">Kam Qolgan Tovar</h3>
+            <h3 className="text-slate-500 dark:text-slate-400 text-sm font-medium">Kam Qolgan Tovar</h3>
             <div className="p-2 bg-red-100 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-red-600" />
             </div>
@@ -110,8 +110,8 @@ const Dashboard: React.FC<DashboardProps> = ({ products = [], transactions = [],
       </div>
 
       {/* Chart */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 className="text-lg font-bold text-slate-800 mb-6">So'nggi 7 kunlik savdo dinamikasi</h3>
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6">So'nggi 7 kunlik savdo dinamikasi</h3>
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={salesData}>
@@ -130,12 +130,12 @@ const Dashboard: React.FC<DashboardProps> = ({ products = [], transactions = [],
 
       {/* Empty state message for new stores */}
       {(products.length === 0 && transactions.length === 0) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 text-center">
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">🎉</span>
           </div>
-          <h3 className="text-lg font-bold text-blue-800 mb-2">Xush kelibsiz!</h3>
-          <p className="text-blue-600">Bu sizning yangi do'koningiz. "Omborxona" bo'limidan mahsulot qo'shishingiz mumkin.</p>
+          <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">Xush kelibsiz!</h3>
+          <p className="text-blue-600 dark:text-blue-400">Bu sizning yangi do'koningiz. "Omborxona" bo'limidan mahsulot qo'shishingiz mumkin.</p>
         </div>
       )}
     </div>

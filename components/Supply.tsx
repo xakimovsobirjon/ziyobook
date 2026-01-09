@@ -270,15 +270,15 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
       )}
 
       {/* Product List */}
-      <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex gap-2">
+      <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Skaner yoki nomini yozing..."
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               autoFocus
@@ -300,31 +300,31 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               <div key={product.id} className="relative">
                 <button
                   onClick={() => addToCart(product)}
-                  className="flex flex-col items-start p-3 border border-slate-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all bg-slate-50 text-left h-full w-full"
+                  className="flex flex-col items-start p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all bg-slate-50 dark:bg-slate-700/50 text-left h-full w-full"
                 >
-                  <div className="w-full aspect-[2/3] bg-slate-200 rounded mb-2 flex items-center justify-center overflow-hidden relative">
+                  <div className="w-full aspect-[2/3] bg-slate-200 dark:bg-slate-700 rounded mb-2 flex items-center justify-center overflow-hidden relative">
                     {product.imageUrl ? (
                       <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="text-slate-400 text-xs flex flex-col items-center">
+                      <div className="text-slate-400 dark:text-slate-500 text-xs flex flex-col items-center">
                         <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
                         <span>Rasm yo'q</span>
                       </div>
                     )}
-                    <div className="absolute top-1 right-1 bg-white px-1.5 rounded text-xs font-bold text-slate-600 shadow-sm">
+                    <div className="absolute top-1 right-1 bg-white dark:bg-slate-800 px-1.5 rounded text-xs font-bold text-slate-600 dark:text-slate-300 shadow-sm">
                       {product.stock} dona
                     </div>
                   </div>
-                  <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
-                  <p className="text-xs text-slate-500 mb-1">{categories.find(c => c.id === product.category)?.name || product.category}</p>
+                  <h3 className="font-semibold text-slate-800 dark:text-white line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{categories.find(c => c.id === product.category)?.name || product.category}</p>
                   <div className="mt-auto pt-2 w-full">
-                    <p className="font-bold text-blue-600">{product.priceBuy.toLocaleString()} so'm</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Joriy Tannarx</p>
+                    <p className="font-bold text-blue-600 dark:text-blue-400">{product.priceBuy.toLocaleString()} so'm</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Joriy Tannarx</p>
                   </div>
                 </button>
                 <button
                   onClick={(e) => handleEditProduct(e, product)}
-                  className="absolute top-2 left-2 p-1.5 bg-white/90 hover:bg-blue-100 text-slate-600 hover:text-blue-700 rounded-lg shadow-sm border border-slate-200"
+                  className="absolute top-2 left-2 p-1.5 bg-white/90 dark:bg-slate-800/90 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600"
                   title="Tahrirlash"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -336,9 +336,9 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
       </div>
 
       {/* Cart & Checkout */}
-      <div className="w-full lg:w-[450px] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
-        <div className="p-4 border-b border-slate-200 bg-blue-50 rounded-t-xl">
-          <h2 className="font-bold text-lg flex items-center text-blue-800">
+      <div className="w-full lg:w-[450px] bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/20 rounded-t-xl">
+          <h2 className="font-bold text-lg flex items-center text-blue-800 dark:text-blue-400">
             <PackagePlus className="w-5 h-5 mr-2" /> Qabul Qilish (Kirim)
           </h2>
         </div>
@@ -348,40 +348,40 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
             <div className="text-center text-slate-400 mt-10">Kirim qilish uchun mahsulot tanlang</div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
+              <div key={item.id} className="bg-white dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 p-3 rounded-lg shadow-sm">
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className="text-sm font-medium text-slate-800 line-clamp-1 flex-1">{item.name}</h4>
+                  <h4 className="text-sm font-medium text-slate-800 dark:text-white line-clamp-1 flex-1">{item.name}</h4>
                   <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 ml-2"><Trash className="w-4 h-4" /></button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-2">
                   <div>
-                    <label className="text-[10px] text-slate-500 uppercase font-bold">Kelish narxi</label>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Kelish narxi</label>
                     <input
                       type="number"
-                      className="w-full border rounded p-1 text-sm"
+                      className="w-full border rounded p-1 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                       value={item.newCost}
                       onChange={(e) => updateCost(item.id, Number(e.target.value))}
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 uppercase font-bold">Soni</label>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Soni</label>
                     <div className="flex items-center">
-                      <button onClick={() => updateQty(item.id, -1)} className="p-1 bg-slate-100 rounded hover:bg-slate-200"><Minus className="w-3 h-3" /></button>
+                      <button onClick={() => updateQty(item.id, -1)} className="p-1 bg-slate-100 dark:bg-slate-600 rounded hover:bg-slate-200 dark:hover:bg-slate-500 dark:text-white"><Minus className="w-3 h-3" /></button>
                       <input
                         type="number"
-                        className="w-full text-center border-none focus:ring-0 p-0 text-sm font-bold"
+                        className="w-full text-center border-none focus:ring-0 p-0 text-sm font-bold bg-transparent dark:text-white"
                         value={item.qty}
                         onChange={(e) => {
                           const val = parseInt(e.target.value) || 0;
                           setCart(prev => prev.map(p => p.id === item.id ? { ...p, qty: val } : p));
                         }}
                       />
-                      <button onClick={() => updateQty(item.id, 1)} className="p-1 bg-slate-100 rounded hover:bg-slate-200"><Plus className="w-3 h-3" /></button>
+                      <button onClick={() => updateQty(item.id, 1)} className="p-1 bg-slate-100 dark:bg-slate-600 rounded hover:bg-slate-200 dark:hover:bg-slate-500 dark:text-white"><Plus className="w-3 h-3" /></button>
                     </div>
                   </div>
                 </div>
-                <div className="text-right text-sm font-bold text-slate-700 border-t pt-1 border-dashed">
+                <div className="text-right text-sm font-bold text-slate-700 dark:text-slate-300 border-t dark:border-slate-600 pt-1 border-dashed">
                   Jami: {(item.newCost * item.qty).toLocaleString()} so'm
                 </div>
               </div>
@@ -389,13 +389,13 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
           )}
         </div>
 
-        <div className="p-4 border-t border-slate-200 space-y-4 bg-slate-50">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-4 bg-slate-50 dark:bg-slate-800/50">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Ta'minotchi (Ixtiyoriy)</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Ta'minotchi (Ixtiyoriy)</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
               <select
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
                 value={selectedSupplierId}
                 onChange={(e) => setSelectedSupplierId(e.target.value)}
               >
@@ -408,7 +408,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">To'lov turi</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">To'lov turi</label>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { id: PaymentMethod.CASH, label: 'Naqd (Kassadan)' },
@@ -419,7 +419,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                   onClick={() => setPaymentMethod(method.id as PaymentMethod)}
                   className={`py-2 text-sm rounded-lg border ${paymentMethod === method.id
                     ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-blue-500'
+                    : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-blue-500'
                     }`}
                 >
                   {method.label}
@@ -429,8 +429,8 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
           </div>
 
           <div className="flex justify-between items-end pt-2">
-            <span className="text-slate-500 text-sm">Jami summa:</span>
-            <span className="text-2xl font-bold text-slate-800">{totalAmount.toLocaleString()} so'm</span>
+            <span className="text-slate-500 dark:text-slate-400 text-sm">Jami summa:</span>
+            <span className="text-2xl font-bold text-slate-800 dark:text-white">{totalAmount.toLocaleString()} so'm</span>
           </div>
 
           <button
@@ -446,16 +446,16 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
 
       {/* NEW PRODUCT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-xl font-bold mb-4">Yangi Mahsulot Yaratish</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-white">Yangi Mahsulot Yaratish</h3>
             <form onSubmit={handleCreateProduct} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Shtrix-kod (Skaner)</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Shtrix-kod (Skaner)</label>
                 <div className="relative">
                   <input
                     type="text"
-                    className="w-full border rounded-lg p-2 pl-9"
+                    className="w-full border rounded-lg p-2 pl-9 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                     value={newProduct.barcode || ''}
                     onChange={e => setNewProduct({ ...newProduct, barcode: e.target.value })}
                     placeholder="Skaner qiling..."
@@ -479,7 +479,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
-                      className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300 disabled:opacity-50"
+                      className="flex items-center px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm transition-colors border border-slate-300 dark:border-slate-600 disabled:opacity-50"
                     >
                       {isUploading ? (
                         <>
@@ -497,7 +497,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                       <button
                         type="button"
                         onClick={() => setNewProduct({ ...newProduct, imageUrl: '' })}
-                        className="text-red-500 hover:text-red-700 p-2"
+                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-2"
                         title="Rasmni o'chirish"
                       >
                         <X className="w-5 h-5" />
@@ -505,27 +505,27 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                     )}
                   </div>
                 </div>
-                <div className="w-20 h-28 bg-slate-100 rounded border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-20 h-28 bg-slate-100 dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
                   {newProduct.imageUrl ? (
                     <img src={newProduct.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
-                    <ImageIcon className="w-8 h-8 text-slate-300" />
+                    <ImageIcon className="w-8 h-8 text-slate-300 dark:text-slate-500" />
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nomi</label>
+                <input type="text" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategoriya</label>
                 <div className="relative">
                   <div className="flex gap-2">
                     <div className="flex-1 relative">
                       <input
                         type="text"
-                        className="w-full border rounded-lg p-2"
+                        className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                         placeholder="Kategoriya qidirish..."
                         value={categorySearch || categories.find(c => c.id === newProduct.category)?.name || ''}
                         onChange={e => {
@@ -538,14 +538,14 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                         onFocus={() => setShowCategoryDropdown(true)}
                       />
                       {showCategoryDropdown && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {categories
                             .filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase()))
                             .map(cat => (
                               <button
                                 key={cat.id}
                                 type="button"
-                                className={`w-full text-left px-3 py-2 hover:bg-slate-100 ${newProduct.category === cat.id ? 'bg-emerald-50 text-emerald-700' : ''}`}
+                                className={`w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-white ${newProduct.category === cat.id ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : ''}`}
                                 onClick={() => {
                                   setNewProduct({ ...newProduct, category: cat.id });
                                   setCategorySearch('');
@@ -557,7 +557,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                             ))}
                           <button
                             type="button"
-                            className="w-full text-left px-3 py-2 text-blue-600 hover:bg-blue-50 border-t"
+                            className="w-full text-left px-3 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-t dark:border-slate-700"
                             onClick={() => {
                               const name = prompt('Yangi kategoriya nomi:');
                               if (name && name.trim()) {
@@ -583,23 +583,23 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Kelish Narxi (Tannarx)</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.priceBuy} onChange={e => setNewProduct({ ...newProduct, priceBuy: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kelish Narxi (Tannarx)</label>
+                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newProduct.priceBuy} onChange={e => setNewProduct({ ...newProduct, priceBuy: Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv Narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.priceSell} onChange={e => setNewProduct({ ...newProduct, priceSell: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv Narxi</label>
+                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newProduct.priceSell} onChange={e => setNewProduct({ ...newProduct, priceSell: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Min. Qoldiq</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={newProduct.minStock} onChange={e => setNewProduct({ ...newProduct, minStock: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min. Qoldiq</label>
+                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newProduct.minStock} onChange={e => setNewProduct({ ...newProduct, minStock: Number(e.target.value) })} />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Bekor qilish</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">Bekor qilish</button>
                 <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Yaratish va Qo'shish</button>
               </div>
             </form>
@@ -610,38 +610,38 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
       {/* Edit Product Modal */}
       {editingProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-slate-800">Mahsulotni tahrirlash</h2>
-              <button onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="p-1 hover:bg-slate-100 rounded">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white">Mahsulotni tahrirlash</h2>
+              <button onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={editFormData.name || ''} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nomi</label>
+                <input type="text" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.name || ''} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategoriya</label>
                 <div className="relative">
                   <input
                     type="text"
-                    className="w-full border rounded-lg p-2"
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                     placeholder="Kategoriya qidirish..."
                     value={editCategorySearch || categories.find(c => c.id === editFormData.category)?.name || ''}
                     onChange={e => { setEditCategorySearch(e.target.value); setShowEditCategoryDropdown(true); }}
                     onFocus={() => setShowEditCategoryDropdown(true)}
                   />
                   {showEditCategoryDropdown && (
-                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                       {categories.filter(cat => cat.name.toLowerCase().includes((editCategorySearch || '').toLowerCase())).map(cat => (
-                        <button key={cat.id} type="button" className={`w-full text-left px-3 py-2 hover:bg-slate-100 ${editFormData.category === cat.id ? 'bg-emerald-50 text-emerald-700' : ''}`}
+                        <button key={cat.id} type="button" className={`w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-white ${editFormData.category === cat.id ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : ''}`}
                           onClick={() => { setEditFormData({ ...editFormData, category: cat.id }); setEditCategorySearch(''); setShowEditCategoryDropdown(false); }}>
                           {cat.name}
                         </button>
                       ))}
-                      <button type="button" className="w-full text-left px-3 py-2 text-blue-600 hover:bg-blue-50 border-t"
+                      <button type="button" className="w-full text-left px-3 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-t dark:border-slate-700"
                         onClick={() => { const name = prompt('Yangi kategoriya nomi:'); if (name?.trim()) { const newCat = { id: generateId(), name: name.trim() }; onUpdateCategories([...categories, newCat]); setEditFormData({ ...editFormData, category: newCat.id }); setShowEditCategoryDropdown(false); } }}>
                         + Yangi kategoriya
                       </button>
@@ -652,26 +652,26 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Tannarx</label>
-                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.priceBuy || 0} onChange={e => setEditFormData({ ...editFormData, priceBuy: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tannarx</label>
+                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.priceBuy || 0} onChange={e => setEditFormData({ ...editFormData, priceBuy: Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={editFormData.priceSell || 0} onChange={e => setEditFormData({ ...editFormData, priceSell: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv narxi</label>
+                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.priceSell || 0} onChange={e => setEditFormData({ ...editFormData, priceSell: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Qoldiq</label>
-                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.stock || 0} onChange={e => setEditFormData({ ...editFormData, stock: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Qoldiq</label>
+                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.stock || 0} onChange={e => setEditFormData({ ...editFormData, stock: Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Min. chegara</label>
-                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.minStock || 0} onChange={e => setEditFormData({ ...editFormData, minStock: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min. chegara</label>
+                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.minStock || 0} onChange={e => setEditFormData({ ...editFormData, minStock: Number(e.target.value) })} />
                 </div>
               </div>
               <div className="flex gap-2 pt-4">
-                <button type="button" onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg">Bekor qilish</button>
+                <button type="button" onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="flex-1 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg">Bekor qilish</button>
                 <button type="submit" className="flex-1 py-2 bg-emerald-600 text-white rounded-lg flex items-center justify-center gap-2">
                   <Check className="w-4 h-4" /> Saqlash
                 </button>
