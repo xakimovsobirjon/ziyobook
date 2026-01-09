@@ -183,7 +183,19 @@ const Employees: React.FC<EmployeesProps> = ({ employees, onUpdateEmployees, onP
               <input type="text" placeholder="F.I.SH" required className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newEmployee.name} onChange={e => setNewEmployee({ ...newEmployee, name: e.target.value })} />
               <input type="text" placeholder="Lavozimi" required className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newEmployee.role} onChange={e => setNewEmployee({ ...newEmployee, role: e.target.value })} />
               <input type="text" placeholder="Telefon" required className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newEmployee.phone} onChange={e => setNewEmployee({ ...newEmployee, phone: e.target.value })} />
-              <input type="number" placeholder="Oylik maoshi" required className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newEmployee.salary} onChange={e => setNewEmployee({ ...newEmployee, salary: Number(e.target.value) })} />
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="Oylik maoshi"
+                required
+                className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                value={newEmployee.salary || ''}
+                onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                onChange={e => {
+                  const val = e.target.value.replace(/[^0-9]/g, '');
+                  setNewEmployee({ ...newEmployee, salary: val === '' ? 0 : Number(val) });
+                }}
+              />
 
               <div className="flex justify-end gap-2 mt-4">
                 <button type="button" onClick={() => { setShowModal(false); setEditingEmployee(null); setNewEmployee({ name: '', role: '', phone: '', salary: 0 }); }} disabled={isSaving} className="px-4 py-2 text-slate-500 dark:text-slate-400 disabled:opacity-50">Bekor qilish</button>

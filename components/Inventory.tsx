@@ -371,205 +371,284 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
       {/* Product Modal */}
       {
         isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-              <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-white">{editingProduct ? "Kitobni tahrirlash" : "Yangi kitob qo'shish"}</h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Shtrix-kod (Skaner)</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      className="w-full border rounded-lg p-2 pl-9 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                      value={formData.barcode || ''}
-                      onChange={e => setFormData({ ...formData, barcode: e.target.value })}
-                      placeholder="Skaner qiling..."
-                    />
-                    <ScanBarcode className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                    {editingProduct ? <Edit2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> : <Plus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">{editingProduct ? "Kitobni tahrirlash" : "Yangi kitob qo'shish"}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Barcha kerakli ma'lumotlarni kiriting</p>
                   </div>
                 </div>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                <div className="flex gap-4 items-start">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kitob rasmi</label>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                    />
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        className="flex items-center px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm transition-colors border border-slate-300 dark:border-slate-600 disabled:opacity-50"
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Yuklanmoqda...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-4 h-4 mr-2" />
-                            Rasm yuklash
-                          </>
-                        )}
-                      </button>
-                      {formData.imageUrl && !isUploading && (
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Barcode */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Shtrix-kod</label>
+                    <div className="relative">
+                      <ScanBarcode className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 pl-11 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
+                        value={formData.barcode || ''}
+                        onChange={e => setFormData({ ...formData, barcode: e.target.value })}
+                        placeholder="Skaner qiling yoki qo'lda kiriting..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-1">
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Kitob rasmi</label>
+                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                      <div className="flex items-center gap-3">
                         <button
                           type="button"
-                          onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-2"
-                          title="Rasmni o'chirish"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploading}
+                          className="flex items-center px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium transition-colors border border-slate-300 dark:border-slate-600 disabled:opacity-50"
+                        >
+                          {isUploading ? (
+                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Yuklanmoqda...</>
+                          ) : (
+                            <><Upload className="w-4 h-4 mr-2" />Rasm yuklash</>
+                          )}
+                        </button>
+                        {formData.imageUrl && !isUploading && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Rasmni o'chirish"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="w-24 h-32 bg-slate-100 dark:bg-slate-700 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
+                      {formData.imageUrl ? (
+                        <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover rounded-lg" />
+                      ) : (
+                        <ImageIcon className="w-10 h-10 text-slate-300 dark:text-slate-500" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Book Name */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Kitob nomi</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Kitob nomini kiriting..."
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Kategoriya</label>
+                    {showNewCategory ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="flex-1 border border-slate-300 dark:border-slate-600 rounded-xl p-3 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                          placeholder="Yangi kategoriya nomi..."
+                          value={newCategoryName}
+                          onChange={e => setNewCategoryName(e.target.value)}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (newCategoryName.trim()) {
+                              const newCat: Category = { id: generateId(), name: newCategoryName.trim() };
+                              onUpdateCategories([...categories, newCat]);
+                              setFormData({ ...formData, category: newCat.id });
+                              setNewCategoryName('');
+                              setShowNewCategory(false);
+                            }
+                          }}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors"
+                        >
+                          <Check className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowNewCategory(false); setNewCategoryName(''); }}
+                          className="px-4 py-2 bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                         >
                           <X className="w-5 h-5" />
                         </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="w-20 h-28 bg-slate-100 dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
-                    {formData.imageUrl ? (
-                      <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
                     ) : (
-                      <ImageIcon className="w-8 h-8 text-slate-300 dark:text-slate-500" />
+                      <div className="relative">
+                        <div className="flex gap-2">
+                          <div className="flex-1 relative">
+                            <input
+                              type="text"
+                              className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                              placeholder="Kategoriya tanlang..."
+                              value={categorySearch || categories.find(c => c.id === formData.category)?.name || ''}
+                              onChange={e => {
+                                setCategorySearch(e.target.value);
+                                setShowCategoryDropdown(true);
+                                if (!e.target.value) {
+                                  setFormData({ ...formData, category: '' });
+                                }
+                              }}
+                              onFocus={() => setShowCategoryDropdown(true)}
+                            />
+                            {showCategoryDropdown && (
+                              <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                {categories
+                                  .filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase()))
+                                  .map(cat => (
+                                    <button
+                                      key={cat.id}
+                                      type="button"
+                                      className={`w-full text-left px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-600 dark:text-white transition-colors ${formData.category === cat.id ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : ''}`}
+                                      onClick={() => {
+                                        setFormData({ ...formData, category: cat.id });
+                                        setCategorySearch('');
+                                        setShowCategoryDropdown(false);
+                                      }}
+                                    >
+                                      {cat.name}
+                                    </button>
+                                  ))}
+                                {categories.filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase())).length === 0 && (
+                                  <div className="px-4 py-3 text-slate-400 text-sm">Topilmadi</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowNewCategory(true)}
+                            className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/50 flex items-center gap-1 font-medium transition-colors"
+                            title="Yangi kategoriya"
+                          >
+                            <Plus className="w-5 h-5" />
+                          </button>
+                        </div>
+                        {showCategoryDropdown && (
+                          <div className="fixed inset-0 z-40" onClick={() => setShowCategoryDropdown(false)} />
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kitob nomi</label>
-                  <input type="text" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategoriya</label>
-                  {showNewCategory ? (
-                    <div className="flex gap-2">
+                  {/* Prices */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Tannarx (so'm)</label>
                       <input
                         type="text"
-                        className="flex-1 border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                        placeholder="Yangi kategoriya nomi..."
-                        value={newCategoryName}
-                        onChange={e => setNewCategoryName(e.target.value)}
-                        autoFocus
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (newCategoryName.trim()) {
-                            const newCat: Category = { id: generateId(), name: newCategoryName.trim() };
-                            onUpdateCategories([...categories, newCat]);
-                            setFormData({ ...formData, category: newCat.id });
-                            setNewCategoryName('');
-                            setShowNewCategory(false);
-                          }
+                        inputMode="numeric"
+                        required
+                        className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
+                        value={formData.priceBuy || ''}
+                        onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                        onChange={e => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setFormData({ ...formData, priceBuy: val === '' ? 0 : Number(val) });
                         }}
-                        className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setShowNewCategory(false); setNewCategoryName(''); }}
-                        className="px-3 py-2 bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                        placeholder="0"
+                      />
                     </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Sotuv narxi (so'm)</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        required
+                        className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
+                        value={formData.priceSell || ''}
+                        onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                        onChange={e => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setFormData({ ...formData, priceSell: val === '' ? 0 : Number(val) });
+                        }}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Stock */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Boshlang'ich qoldiq</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        required
+                        className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
+                        value={formData.stock || ''}
+                        onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                        onChange={e => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setFormData({ ...formData, stock: val === '' ? 0 : Number(val) });
+                        }}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Min. ogohlantirish</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        required
+                        className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
+                        value={formData.minStock || ''}
+                        onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                        onChange={e => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setFormData({ ...formData, minStock: val === '' ? 0 : Number(val) });
+                        }}
+                        placeholder="5"
+                      />
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isSaving}
+                  className="px-5 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl disabled:opacity-50 font-medium transition-colors"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSaving}
+                  className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2 font-medium transition-colors shadow-lg shadow-emerald-600/20"
+                >
+                  {isSaving ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" />Saqlanmoqda...</>
                   ) : (
-                    <div className="relative">
-                      <div className="flex gap-2">
-                        <div className="flex-1 relative">
-                          <input
-                            type="text"
-                            className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                            placeholder="Kategoriya qidirish..."
-                            value={categorySearch || categories.find(c => c.id === formData.category)?.name || ''}
-                            onChange={e => {
-                              setCategorySearch(e.target.value);
-                              setShowCategoryDropdown(true);
-                              if (!e.target.value) {
-                                setFormData({ ...formData, category: '' });
-                              }
-                            }}
-                            onFocus={() => setShowCategoryDropdown(true)}
-                          />
-                          {showCategoryDropdown && (
-                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                              {categories
-                                .filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase()))
-                                .map(cat => (
-                                  <button
-                                    key={cat.id}
-                                    type="button"
-                                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-600 dark:text-white ${formData.category === cat.id ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : ''}`}
-                                    onClick={() => {
-                                      setFormData({ ...formData, category: cat.id });
-                                      setCategorySearch('');
-                                      setShowCategoryDropdown(false);
-                                    }}
-                                  >
-                                    {cat.name}
-                                  </button>
-                                ))}
-                              {categories.filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase())).length === 0 && (
-                                <div className="px-3 py-2 text-slate-400 text-sm">Topilmadi</div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowNewCategory(true)}
-                          className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 flex items-center gap-1"
-                          title="Yangi kategoriya"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {/* Click outside to close */}
-                      {showCategoryDropdown && (
-                        <div className="fixed inset-0 z-40" onClick={() => setShowCategoryDropdown(false)} />
-                      )}
-                    </div>
+                    <><Check className="w-4 h-4" />Saqlash</>
                   )}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tannarx</label>
-                    <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.priceBuy} onChange={e => setFormData({ ...formData, priceBuy: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv Narxi</label>
-                    <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.priceSell} onChange={e => setFormData({ ...formData, priceSell: Number(e.target.value) })} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Qoldiq</label>
-                    <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.stock} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min. Chegara</label>
-                    <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formData.minStock} onChange={e => setFormData({ ...formData, minStock: Number(e.target.value) })} />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3 mt-6">
-                  <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg disabled:opacity-50">Bekor qilish</button>
-                  <button type="submit" disabled={isSaving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Saqlanmoqda...
-                      </>
-                    ) : (
-                      'Saqlash'
-                    )}
-                  </button>
-                </div>
-              </form>
+                </button>
+              </div>
             </div>
           </div>
         )

@@ -651,17 +651,53 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kelish Narxi (Tannarx)</label>
-                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newProduct.priceBuy} onChange={e => setNewProduct({ ...newProduct, priceBuy: Number(e.target.value) })} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    value={newProduct.priceBuy || ''}
+                    onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setNewProduct({ ...newProduct, priceBuy: val === '' ? 0 : Number(val) });
+                    }}
+                    placeholder="0"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv Narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newProduct.priceSell} onChange={e => setNewProduct({ ...newProduct, priceSell: Number(e.target.value) })} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    value={newProduct.priceSell || ''}
+                    onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setNewProduct({ ...newProduct, priceSell: val === '' ? 0 : Number(val) });
+                    }}
+                    placeholder="0"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min. Qoldiq</label>
-                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newProduct.minStock} onChange={e => setNewProduct({ ...newProduct, minStock: Number(e.target.value) })} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    value={newProduct.minStock || ''}
+                    onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setNewProduct({ ...newProduct, minStock: val === '' ? 0 : Number(val) });
+                    }}
+                    placeholder="5"
+                  />
                 </div>
               </div>
 
@@ -720,21 +756,66 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tannarx</label>
-                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.priceBuy || 0} onChange={e => setEditFormData({ ...editFormData, priceBuy: Number(e.target.value) })} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    value={editFormData.priceBuy || ''}
+                    onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setEditFormData({ ...editFormData, priceBuy: val === '' ? 0 : Number(val) });
+                    }}
+                    placeholder="0"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.priceSell || 0} onChange={e => setEditFormData({ ...editFormData, priceSell: Number(e.target.value) })} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    value={editFormData.priceSell || ''}
+                    onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setEditFormData({ ...editFormData, priceSell: val === '' ? 0 : Number(val) });
+                    }}
+                    placeholder="0"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Qoldiq</label>
-                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.stock || 0} onChange={e => setEditFormData({ ...editFormData, stock: Number(e.target.value) })} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    value={editFormData.stock || ''}
+                    onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setEditFormData({ ...editFormData, stock: val === '' ? 0 : Number(val) });
+                    }}
+                    placeholder="0"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min. chegara</label>
-                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.minStock || 0} onChange={e => setEditFormData({ ...editFormData, minStock: Number(e.target.value) })} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    value={editFormData.minStock || ''}
+                    onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setEditFormData({ ...editFormData, minStock: val === '' ? 0 : Number(val) });
+                    }}
+                    placeholder="5"
+                  />
                 </div>
               </div>
               <div className="flex gap-2 pt-4">

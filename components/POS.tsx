@@ -441,45 +441,88 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
       {/* Receipt Modal */}
       {showReceipt && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl max-w-sm w-full shadow-2xl print:shadow-none print:w-full print:max-w-none print:text-black">
-            <div className="text-center mb-6 border-b-2 border-dashed border-slate-300 dark:border-slate-600 pb-4">
-              <h1 className="text-xl font-bold uppercase tracking-wider text-slate-800 dark:text-white print:text-black">ZiyoBook</h1>
-              <p className="text-slate-500 dark:text-slate-400 text-sm print:text-gray-600">Kitob do'koni</p>
-              <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 print:text-gray-500">{new Date(showReceipt.date).toLocaleString()}</p>
-              <p className="text-slate-400 dark:text-slate-500 text-xs print:text-gray-500">Chek #{showReceipt.id.slice(-6)}</p>
+          <div className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden print:shadow-none print:w-full print:max-w-none print:rounded-none print:from-white print:to-white">
+            {/* Header */}
+            <div className="bg-emerald-600 dark:bg-emerald-700 text-white p-6 text-center print:bg-white print:text-black print:border-b-2 print:border-black print:p-4">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 print:hidden">
+                <ShoppingCart className="w-8 h-8" />
+              </div>
+              <h1 className="text-2xl font-bold uppercase tracking-widest print:text-black print:text-xl">ZiyoBook</h1>
+              <p className="text-emerald-100 dark:text-emerald-200 text-sm mt-1 print:text-black">Kitob do'koni</p>
             </div>
 
-            <div className="space-y-3 mb-6">
+            {/* Receipt Info */}
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 text-center print:border-b print:border-gray-300 print:py-2">
+              <p className="text-slate-600 dark:text-slate-400 text-sm print:text-black">
+                {new Date(showReceipt.date).toLocaleDateString('uz-UZ', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+              <p className="text-slate-500 dark:text-slate-500 text-xs mt-1 font-mono print:text-black">
+                Chek: #{showReceipt.id.slice(-8).toUpperCase()}
+              </p>
+            </div>
+
+            {/* Items */}
+            <div className="px-6 py-4 space-y-3 max-h-60 overflow-y-auto print:max-h-none print:overflow-visible print:py-2">
               {showReceipt.items?.map((item, idx) => (
-                <div key={idx} className="flex justify-between text-sm">
-                  <span className="text-slate-800 dark:text-white print:text-black">{item.name} <span className="text-xs text-slate-500 dark:text-slate-400 print:text-gray-600">x{item.qty}</span></span>
-                  <span className="font-medium text-slate-800 dark:text-white print:text-black">{(item.priceSell * item.qty).toLocaleString()}</span>
+                <div key={idx} className="flex justify-between items-center py-2 border-b border-dashed border-slate-200 dark:border-slate-700 last:border-0 print:border-gray-300">
+                  <div className="flex-1">
+                    <p className="text-slate-800 dark:text-white font-medium text-sm print:text-black">{item.name}</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs print:text-gray-700">
+                      {item.priceSell.toLocaleString()} × {item.qty} dona
+                    </p>
+                  </div>
+                  <span className="font-bold text-slate-800 dark:text-white print:text-black">
+                    {(item.priceSell * item.qty).toLocaleString()}
+                  </span>
                 </div>
               ))}
             </div>
 
-            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mb-6">
-              <div className="flex justify-between font-bold text-lg text-slate-800 dark:text-white">
-                <span>Jami:</span>
-                <span>{showReceipt.totalAmount.toLocaleString()} so'm</span>
+            {/* Total */}
+            <div className="mx-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-200 dark:border-emerald-800 print:bg-white print:border-2 print:border-black print:rounded-none print:mx-4">
+              <div className="flex justify-between items-center">
+                <span className="text-emerald-800 dark:text-emerald-300 font-semibold print:text-black">Jami summa:</span>
+                <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 print:text-black">{showReceipt.totalAmount.toLocaleString()} <span className="text-sm">so'm</span></span>
               </div>
-              <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400 mt-1">
+              <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-800 print:text-black print:border-gray-400">
                 <span>To'lov turi:</span>
-                <span>
-                  {showReceipt.paymentMethod === PaymentMethod.CASH ? 'Naqd' :
-                    showReceipt.paymentMethod === PaymentMethod.CARD ? 'Karta' : 'Nasiya'}
+                <span className="font-medium print:text-black">
+                  {showReceipt.paymentMethod === PaymentMethod.CASH ? '💵 Naqd' :
+                    showReceipt.paymentMethod === PaymentMethod.CARD ? '💳 Karta' : '📝 Nasiya'}
                 </span>
               </div>
             </div>
 
-            <div className="text-center text-xs text-slate-400 dark:text-slate-500 mb-6">
-              Xaridingiz uchun rahmat!<br />
-              Har doim biz bilan bo'ling.
+            {/* Thank You Message */}
+            <div className="text-center py-4 px-6 print:py-2">
+              <p className="text-slate-500 dark:text-slate-400 text-sm print:text-black">
+                ✨ Xaridingiz uchun rahmat!
+              </p>
+              <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 print:text-gray-700">
+                Har doim biz bilan bo'ling
+              </p>
             </div>
 
-            <div className="flex flex-col gap-2 no-print">
-              <button onClick={handlePrint} className="w-full bg-slate-800 dark:bg-emerald-600 hover:bg-slate-900 dark:hover:bg-emerald-700 text-white py-2 rounded-lg font-medium transition-colors">Chop etish</button>
-              <button onClick={() => setShowReceipt(null)} className="w-full text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 py-2 transition-colors">Yopish</button>
+            {/* Actions */}
+            <div className="p-4 bg-slate-100 dark:bg-slate-900/50 flex gap-3 no-print">
+              <button
+                onClick={() => setShowReceipt(null)}
+                className="flex-1 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl font-medium transition-colors"
+              >
+                Yopish
+              </button>
+              <button
+                onClick={handlePrint}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30"
+              >
+                🖨️ Chop etish
+              </button>
             </div>
           </div>
         </div>
