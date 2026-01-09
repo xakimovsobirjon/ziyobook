@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
-import { StoreData, TransactionType, PaymentMethod, CartItem } from '../types';
+import { StoreData, TransactionType, PaymentMethod, CartItem, Category } from '../types';
 
 const COLLECTION_NAME = 'ziyobook';
 const DOC_NAME = 'store';
@@ -12,15 +12,16 @@ export const INITIAL_STORE_DATA: StoreData = {
   products: [],
   partners: [],
   employees: [],
-  transactions: []
+  transactions: [],
+  categories: []
 };
 
 const LEGACY_INITIAL_DATA: StoreData = {
   products: [
-    { id: '1', name: 'O\'tkan kunlar', category: 'Badiiy', priceBuy: 25000, priceSell: 45000, stock: 12, minStock: 5, barcode: '4780000000001', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/5e15bc9d92383.jpg' },
-    { id: '2', name: 'Atom odatlar', category: 'Psixologiya', priceBuy: 40000, priceSell: 75000, stock: 4, minStock: 5, barcode: '9780000000002', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/698d51a19d8a121ce581499d7b70166820230527125740523041X5t8l2p0kH.jpg' },
-    { id: '3', name: 'Alkimyogar', category: 'Badiiy', priceBuy: 30000, priceSell: 55000, stock: 20, minStock: 5, barcode: '4780000000003', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/5e15c26a61a4f.jpg' },
-    { id: '4', name: 'Stive Jobs', category: 'Biografiya', priceBuy: 60000, priceSell: 110000, stock: 2, minStock: 3, barcode: '4780000000004', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/5e15bf948c262.jpg' },
+    { id: '1', name: 'O\'tkan kunlar', category: 'cat1', priceBuy: 25000, priceSell: 45000, stock: 12, minStock: 5, barcode: '4780000000001', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/5e15bc9d92383.jpg' },
+    { id: '2', name: 'Atom odatlar', category: 'cat2', priceBuy: 40000, priceSell: 75000, stock: 4, minStock: 5, barcode: '9780000000002', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/698d51a19d8a121ce581499d7b70166820230527125740523041X5t8l2p0kH.jpg' },
+    { id: '3', name: 'Alkimyogar', category: 'cat1', priceBuy: 30000, priceSell: 55000, stock: 20, minStock: 5, barcode: '4780000000003', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/5e15c26a61a4f.jpg' },
+    { id: '4', name: 'Stive Jobs', category: 'cat3', priceBuy: 60000, priceSell: 110000, stock: 2, minStock: 3, barcode: '4780000000004', imageUrl: 'https://assets.asaxiy.uz/product/items/desktop/5e15bf948c262.jpg' },
   ],
   partners: [
     { id: 'p1', name: 'Azizbek K.', phone: '+998901234567', type: 'CUSTOMER', balance: 50000 },
@@ -39,6 +40,11 @@ const LEGACY_INITIAL_DATA: StoreData = {
       paymentMethod: PaymentMethod.CASH,
       items: []
     }
+  ],
+  categories: [
+    { id: 'cat1', name: 'Badiiy' },
+    { id: 'cat2', name: 'Psixologiya' },
+    { id: 'cat3', name: 'Biografiya' },
   ]
 };
 
@@ -156,9 +162,12 @@ export const subscribeToStoreData = (callback: (data: StoreData) => void, storeI
 // POS Session Functions
 // ============================================
 
-export const getPOSSessionData = async (): Promise<POSSessionData> => {
+export const getPOSSessionData = async (storeId?: string): Promise<POSSessionData> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, SESSIONS_DOC);
+    const docRef = storeId
+      ? doc(db, 'stores', storeId, 'data', 'sessions')
+      : doc(db, COLLECTION_NAME, SESSIONS_DOC);
+
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -176,9 +185,12 @@ export const getPOSSessionData = async (): Promise<POSSessionData> => {
   return { cart: [], customerId: '', paymentMethod: PaymentMethod.CASH };
 };
 
-export const savePOSSessionData = async (data: POSSessionData): Promise<void> => {
+export const savePOSSessionData = async (data: POSSessionData, storeId?: string): Promise<void> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, SESSIONS_DOC);
+    const docRef = storeId
+      ? doc(db, 'stores', storeId, 'data', 'sessions')
+      : doc(db, COLLECTION_NAME, SESSIONS_DOC);
+
     const existingSnap = await getDoc(docRef);
     const existingData = existingSnap.exists() ? existingSnap.data() : {};
 
@@ -194,9 +206,12 @@ export const savePOSSessionData = async (data: POSSessionData): Promise<void> =>
   }
 };
 
-export const clearPOSSessionData = async (): Promise<void> => {
+export const clearPOSSessionData = async (storeId?: string): Promise<void> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, SESSIONS_DOC);
+    const docRef = storeId
+      ? doc(db, 'stores', storeId, 'data', 'sessions')
+      : doc(db, COLLECTION_NAME, SESSIONS_DOC);
+
     const existingSnap = await getDoc(docRef);
     const existingData = existingSnap.exists() ? existingSnap.data() : {};
 
@@ -216,9 +231,12 @@ export const clearPOSSessionData = async (): Promise<void> => {
 // Supply Session Functions
 // ============================================
 
-export const getSupplySessionData = async (): Promise<SupplySessionData> => {
+export const getSupplySessionData = async (storeId?: string): Promise<SupplySessionData> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, SESSIONS_DOC);
+    const docRef = storeId
+      ? doc(db, 'stores', storeId, 'data', 'sessions')
+      : doc(db, COLLECTION_NAME, SESSIONS_DOC);
+
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -236,9 +254,12 @@ export const getSupplySessionData = async (): Promise<SupplySessionData> => {
   return { cart: [], supplierId: '', paymentMethod: PaymentMethod.CASH };
 };
 
-export const saveSupplySessionData = async (data: SupplySessionData): Promise<void> => {
+export const saveSupplySessionData = async (data: SupplySessionData, storeId?: string): Promise<void> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, SESSIONS_DOC);
+    const docRef = storeId
+      ? doc(db, 'stores', storeId, 'data', 'sessions')
+      : doc(db, COLLECTION_NAME, SESSIONS_DOC);
+
     const existingSnap = await getDoc(docRef);
     const existingData = existingSnap.exists() ? existingSnap.data() : {};
 
@@ -254,9 +275,12 @@ export const saveSupplySessionData = async (data: SupplySessionData): Promise<vo
   }
 };
 
-export const clearSupplySessionData = async (): Promise<void> => {
+export const clearSupplySessionData = async (storeId?: string): Promise<void> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, SESSIONS_DOC);
+    const docRef = storeId
+      ? doc(db, 'stores', storeId, 'data', 'sessions')
+      : doc(db, COLLECTION_NAME, SESSIONS_DOC);
+
     const existingSnap = await getDoc(docRef);
     const existingData = existingSnap.exists() ? existingSnap.data() : {};
 

@@ -1,15 +1,21 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Product, CartItem, Partner, TransactionType, PaymentMethod, Transaction } from '../types';
-import { Search, Plus, Minus, ShoppingCart, User, CreditCard, Trash, Image as ImageIcon, ScanBarcode, AlertCircle } from 'lucide-react';
+import { Product, CartItem, Partner, TransactionType, PaymentMethod, Transaction, Category } from '../types';
+import { Search, Plus, Minus, ShoppingCart, User, CreditCard, Trash, Image as ImageIcon, ScanBarcode, AlertCircle, Edit2, X, Check } from 'lucide-react';
 import { generateId, getPOSSessionData, savePOSSessionData, clearPOSSessionData } from '../services/storage';
 
 interface POSProps {
   products: Product[];
   customers: Partner[];
   onTransaction: (transaction: Transaction, updatedProducts: Product[], updatedCustomer?: Partner) => void;
+  onUpdateProducts: (products: Product[]) => void;
+  categories: Category[];
+  onUpdateCategories: (categories: Category[]) => void;
 }
 
-const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
+import { useAuth } from '../contexts/AuthContext';
+
+const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateProducts, categories, onUpdateCategories }) => {
+  const { storeId } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,11 +26,17 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
   const [showReceipt, setShowReceipt] = useState<Transaction | null>(null);
 
+  // Edit product state
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<Product>>({});
+  const [categorySearch, setCategorySearch] = useState('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
   // Load initial state from Firebase
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const session = await getPOSSessionData();
+        const session = await getPOSSessionData(storeId || undefined);
         setCart(session.cart);
         setSelectedCustomerId(session.customerId);
         setPaymentMethod(session.paymentMethod);
@@ -35,7 +47,7 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
       }
     };
     loadSession();
-  }, []);
+  }, [storeId]);
 
   // Save session to Firebase with debounce
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,9 +61,9 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
         cart,
         customerId: selectedCustomerId,
         paymentMethod
-      });
+      }, storeId || undefined);
     }, 500);
-  }, [cart, selectedCustomerId, paymentMethod]);
+  }, [cart, selectedCustomerId, paymentMethod, storeId]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -160,11 +172,26 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
     setCart([]);
     setSelectedCustomerId('');
     setPaymentMethod(PaymentMethod.CASH);
-    await clearPOSSessionData();
+    await clearPOSSessionData(storeId || undefined);
   };
 
   const handlePrint = () => {
     window.print();
+  };
+
+  // Edit product handlers
+  const handleEditProduct = (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+    setEditingProduct(product);
+    setEditFormData(product);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingProduct || !editFormData.name || !editFormData.priceSell) return;
+    const updated = products.map(p => p.id === editingProduct.id ? { ...p, ...editFormData } as Product : p);
+    onUpdateProducts(updated);
+    setEditingProduct(null);
+    setEditFormData({});
   };
 
   if (isLoading) {
@@ -199,32 +226,40 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredProducts.map(product => (
-              <button
-                key={product.id}
-                onClick={() => addToCart(product)}
-                className={`flex flex-col items-start p-3 border rounded-lg hover:shadow-md transition-all text-left h-full ${product.stock <= 0 ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-emerald-500'
-                  }`}
-              >
-                <div className="w-full aspect-[2/3] bg-white rounded mb-2 flex items-center justify-center overflow-hidden border border-slate-100">
-                  {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-slate-400 text-xs flex flex-col items-center">
-                      <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
-                      <span>Rasm yo'q</span>
-                    </div>
-                  )}
-                </div>
-                <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
-                <p className="text-xs text-slate-500 mb-1">{product.category}</p>
-                <div className="mt-auto pt-2 w-full">
-                  <p className="font-bold text-emerald-600">{product.priceSell.toLocaleString()} so'm</p>
-                  <div className={`text-xs mt-0.5 flex items-center ${product.stock <= 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
-                    {product.stock <= 0 && <AlertCircle className="w-3 h-3 mr-1" />}
-                    Qoldiq: {product.stock}
+              <div key={product.id} className="relative">
+                <button
+                  onClick={() => addToCart(product)}
+                  className={`flex flex-col items-start p-3 border rounded-lg hover:shadow-md transition-all text-left h-full w-full ${product.stock <= 0 ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50 hover:border-emerald-500'
+                    }`}
+                >
+                  <div className="w-full aspect-[2/3] bg-white rounded mb-2 flex items-center justify-center overflow-hidden border border-slate-100">
+                    {product.imageUrl ? (
+                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-slate-400 text-xs flex flex-col items-center">
+                        <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
+                        <span>Rasm yo'q</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </button>
+                  <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
+                  <p className="text-xs text-slate-500 mb-1">{categories.find(c => c.id === product.category)?.name || product.category}</p>
+                  <div className="mt-auto pt-2 w-full">
+                    <p className="font-bold text-emerald-600">{product.priceSell.toLocaleString()} so'm</p>
+                    <div className={`text-xs mt-0.5 flex items-center ${product.stock <= 0 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                      {product.stock <= 0 && <AlertCircle className="w-3 h-3 mr-1" />}
+                      Qoldiq: {product.stock}
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => handleEditProduct(e, product)}
+                  className="absolute top-2 right-2 p-1.5 bg-white/90 hover:bg-blue-100 text-slate-600 hover:text-blue-700 rounded-lg shadow-sm border border-slate-200"
+                  title="Tahrirlash"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ))}
             {filteredProducts.length === 0 && (
               <div className="col-span-full text-center text-slate-400 py-10">
@@ -294,8 +329,8 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
                   key={method.id}
                   onClick={() => setPaymentMethod(method.id as PaymentMethod)}
                   className={`py-2 text-sm rounded-lg border ${paymentMethod === method.id
-                      ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-500'
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-500'
                     }`}
                 >
                   {method.label}
@@ -363,6 +398,80 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction }) => {
               <button onClick={handlePrint} className="w-full bg-slate-800 text-white py-2 rounded-lg font-medium">Chop etish</button>
               <button onClick={() => setShowReceipt(null)} className="w-full text-slate-500 py-2">Yopish</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-slate-800">Mahsulotni tahrirlash</h2>
+              <button onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="p-1 hover:bg-slate-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nomi</label>
+                <input type="text" required className="w-full border rounded-lg p-2" value={editFormData.name || ''} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg p-2"
+                    placeholder="Kategoriya qidirish..."
+                    value={categorySearch || categories.find(c => c.id === editFormData.category)?.name || ''}
+                    onChange={e => { setCategorySearch(e.target.value); setShowCategoryDropdown(true); }}
+                    onFocus={() => setShowCategoryDropdown(true)}
+                  />
+                  {showCategoryDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {categories.filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase())).map(cat => (
+                        <button key={cat.id} type="button" className={`w-full text-left px-3 py-2 hover:bg-slate-100 ${editFormData.category === cat.id ? 'bg-emerald-50 text-emerald-700' : ''}`}
+                          onClick={() => { setEditFormData({ ...editFormData, category: cat.id }); setCategorySearch(''); setShowCategoryDropdown(false); }}>
+                          {cat.name}
+                        </button>
+                      ))}
+                      <button type="button" className="w-full text-left px-3 py-2 text-blue-600 hover:bg-blue-50 border-t"
+                        onClick={() => { const name = prompt('Yangi kategoriya nomi:'); if (name?.trim()) { const newCat = { id: generateId(), name: name.trim() }; onUpdateCategories([...categories, newCat]); setEditFormData({ ...editFormData, category: newCat.id }); setShowCategoryDropdown(false); } }}>
+                        + Yangi kategoriya
+                      </button>
+                    </div>
+                  )}
+                  {showCategoryDropdown && <div className="fixed inset-0 z-40" onClick={() => setShowCategoryDropdown(false)} />}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tannarx</label>
+                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.priceBuy || 0} onChange={e => setEditFormData({ ...editFormData, priceBuy: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv narxi</label>
+                  <input type="number" required className="w-full border rounded-lg p-2" value={editFormData.priceSell || 0} onChange={e => setEditFormData({ ...editFormData, priceSell: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Qoldiq</label>
+                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.stock || 0} onChange={e => setEditFormData({ ...editFormData, stock: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Min. chegara</label>
+                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.minStock || 0} onChange={e => setEditFormData({ ...editFormData, minStock: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button type="button" onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg">Bekor qilish</button>
+                <button type="submit" className="flex-1 py-2 bg-emerald-600 text-white rounded-lg flex items-center justify-center gap-2">
+                  <Check className="w-4 h-4" /> Saqlash
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

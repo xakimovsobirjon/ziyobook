@@ -1,16 +1,21 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Product, Partner, TransactionType, PaymentMethod, Transaction } from '../types';
-import { Search, Plus, Minus, PackagePlus, User, Trash, Image as ImageIcon, ScanBarcode, Upload, X } from 'lucide-react';
-import { generateId, convertFileToBase64, getSupplySessionData, saveSupplySessionData, clearSupplySessionData, SupplyCartItem } from '../services/storage';
+import { Product, Partner, TransactionType, PaymentMethod, Transaction, Category } from '../types';
+import { Search, Plus, Minus, PackagePlus, User, Trash, Image as ImageIcon, ScanBarcode, Upload, X, Loader2, Check, Edit2 } from 'lucide-react';
+import { generateId, uploadProductImage, getSupplySessionData, saveSupplySessionData, clearSupplySessionData, SupplyCartItem } from '../services/storage';
 
 interface SupplyProps {
   products: Product[];
   suppliers: Partner[];
   onTransaction: (transaction: Transaction, updatedProducts: Product[], updatedSupplier?: Partner) => void;
   onUpdateProducts: (products: Product[]) => void;
+  categories: Category[];
+  onUpdateCategories: (categories: Category[]) => void;
 }
 
-const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onUpdateProducts }) => {
+import { useAuth } from '../contexts/AuthContext';
+
+const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onUpdateProducts, categories, onUpdateCategories }) => {
+  const { storeId } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,6 +24,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
   const [cart, setCart] = useState<SupplyCartItem[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Modal State for New Product
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,12 +32,20 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     name: '', category: '', priceBuy: 0, priceSell: 0, stock: 0, minStock: 5, imageUrl: '', barcode: ''
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  // Edit product state
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<Product>>({});
+  const [editCategorySearch, setEditCategorySearch] = useState('');
+  const [showEditCategoryDropdown, setShowEditCategoryDropdown] = useState(false);
 
   // Load initial state from Firebase
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const session = await getSupplySessionData();
+        const session = await getSupplySessionData(storeId || undefined);
         setCart(session.cart);
         setSelectedSupplierId(session.supplierId);
         setPaymentMethod(session.paymentMethod);
@@ -42,7 +56,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
       }
     };
     loadSession();
-  }, []);
+  }, [storeId]);
 
   // Save session to Firebase with debounce
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -56,9 +70,9 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
         cart,
         supplierId: selectedSupplierId,
         paymentMethod
-      });
+      }, storeId || undefined);
     }, 500);
-  }, [cart, selectedSupplierId, paymentMethod]);
+  }, [cart, selectedSupplierId, paymentMethod, storeId]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -169,9 +183,11 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     setCart([]);
     setSelectedSupplierId('');
     setPaymentMethod(PaymentMethod.CASH);
-    await clearSupplySessionData();
+    await clearSupplySessionData(storeId || undefined);
 
-    alert("Mahsulotlar muvaffaqiyatli kirim qilindi!");
+    // Show success toast
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   // Create New Product Logic
@@ -202,14 +218,35 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     setNewProduct({ name: '', category: '', priceBuy: 0, priceSell: 0, stock: 0, minStock: 5, imageUrl: '', barcode: '' });
   };
 
+  // Edit product handlers
+  const handleEditProduct = (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+    setEditingProduct(product);
+    setEditFormData(product);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingProduct || !editFormData.name || !editFormData.priceSell) return;
+    const updated = products.map(p => p.id === editingProduct.id ? { ...p, ...editFormData } as Product : p);
+    onUpdateProducts(updated);
+    setEditingProduct(null);
+    setEditFormData({});
+  };
+
+  const [isUploading, setIsUploading] = useState(false);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const base64 = await convertFileToBase64(file);
-        setNewProduct({ ...newProduct, imageUrl: base64 });
+        setIsUploading(true);
+        const imageUrl = await uploadProductImage(file);
+        setNewProduct({ ...newProduct, imageUrl });
       } catch (error) {
+        console.error("Image upload error:", error);
         alert("Rasm yuklashda xatolik bo'ldi");
+      } finally {
+        setIsUploading(false);
       }
     }
   };
@@ -224,6 +261,14 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
+      {/* Success Toast */}
+      {saveSuccess && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+          <Check className="w-5 h-5" />
+          <span>Mahsulotlar muvaffaqiyatli kirim qilindi!</span>
+        </div>
+      )}
+
       {/* Product List */}
       <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex gap-2">
@@ -252,31 +297,39 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
         <div className="flex-1 overflow-y-auto p-4">
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredProducts.map(product => (
-              <button
-                key={product.id}
-                onClick={() => addToCart(product)}
-                className="flex flex-col items-start p-3 border border-slate-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all bg-slate-50 text-left h-full"
-              >
-                <div className="w-full aspect-[2/3] bg-slate-200 rounded mb-2 flex items-center justify-center overflow-hidden relative">
-                  {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-slate-400 text-xs flex flex-col items-center">
-                      <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
-                      <span>Rasm yo'q</span>
+              <div key={product.id} className="relative">
+                <button
+                  onClick={() => addToCart(product)}
+                  className="flex flex-col items-start p-3 border border-slate-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all bg-slate-50 text-left h-full w-full"
+                >
+                  <div className="w-full aspect-[2/3] bg-slate-200 rounded mb-2 flex items-center justify-center overflow-hidden relative">
+                    {product.imageUrl ? (
+                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-slate-400 text-xs flex flex-col items-center">
+                        <ImageIcon className="w-8 h-8 mb-1 opacity-50" />
+                        <span>Rasm yo'q</span>
+                      </div>
+                    )}
+                    <div className="absolute top-1 right-1 bg-white px-1.5 rounded text-xs font-bold text-slate-600 shadow-sm">
+                      {product.stock} dona
                     </div>
-                  )}
-                  <div className="absolute top-1 right-1 bg-white px-1.5 rounded text-xs font-bold text-slate-600 shadow-sm">
-                    {product.stock} dona
                   </div>
-                </div>
-                <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
-                <p className="text-xs text-slate-500 mb-1">{product.category}</p>
-                <div className="mt-auto pt-2 w-full">
-                  <p className="font-bold text-blue-600">{product.priceBuy.toLocaleString()} so'm</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Joriy Tannarx</p>
-                </div>
-              </button>
+                  <h3 className="font-semibold text-slate-800 line-clamp-2 text-sm leading-tight mb-1">{product.name}</h3>
+                  <p className="text-xs text-slate-500 mb-1">{categories.find(c => c.id === product.category)?.name || product.category}</p>
+                  <div className="mt-auto pt-2 w-full">
+                    <p className="font-bold text-blue-600">{product.priceBuy.toLocaleString()} so'm</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Joriy Tannarx</p>
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => handleEditProduct(e, product)}
+                  className="absolute top-2 left-2 p-1.5 bg-white/90 hover:bg-blue-100 text-slate-600 hover:text-blue-700 rounded-lg shadow-sm border border-slate-200"
+                  title="Tahrirlash"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -365,8 +418,8 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                   key={method.id}
                   onClick={() => setPaymentMethod(method.id as PaymentMethod)}
                   className={`py-2 text-sm rounded-lg border ${paymentMethod === method.id
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-blue-500'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-blue-500'
                     }`}
                 >
                   {method.label}
@@ -425,12 +478,22 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300"
+                      disabled={isUploading}
+                      className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300 disabled:opacity-50"
                     >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Rasm yuklash
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Yuklanmoqda...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Rasm yuklash
+                        </>
+                      )}
                     </button>
-                    {newProduct.imageUrl && (
+                    {newProduct.imageUrl && !isUploading && (
                       <button
                         type="button"
                         onClick={() => setNewProduct({ ...newProduct, imageUrl: '' })}
@@ -457,7 +520,65 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })} />
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        className="w-full border rounded-lg p-2"
+                        placeholder="Kategoriya qidirish..."
+                        value={categorySearch || categories.find(c => c.id === newProduct.category)?.name || ''}
+                        onChange={e => {
+                          setCategorySearch(e.target.value);
+                          setShowCategoryDropdown(true);
+                          if (!e.target.value) {
+                            setNewProduct({ ...newProduct, category: '' });
+                          }
+                        }}
+                        onFocus={() => setShowCategoryDropdown(true)}
+                      />
+                      {showCategoryDropdown && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {categories
+                            .filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase()))
+                            .map(cat => (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                className={`w-full text-left px-3 py-2 hover:bg-slate-100 ${newProduct.category === cat.id ? 'bg-emerald-50 text-emerald-700' : ''}`}
+                                onClick={() => {
+                                  setNewProduct({ ...newProduct, category: cat.id });
+                                  setCategorySearch('');
+                                  setShowCategoryDropdown(false);
+                                }}
+                              >
+                                {cat.name}
+                              </button>
+                            ))}
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-blue-600 hover:bg-blue-50 border-t"
+                            onClick={() => {
+                              const name = prompt('Yangi kategoriya nomi:');
+                              if (name && name.trim()) {
+                                const newCat: Category = { id: generateId(), name: name.trim() };
+                                onUpdateCategories([...categories, newCat]);
+                                setNewProduct({ ...newProduct, category: newCat.id });
+                                setCategorySearch('');
+                                setShowCategoryDropdown(false);
+                              }
+                            }}
+                          >
+                            + Yangi kategoriya
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {showCategoryDropdown && (
+                    <div className="fixed inset-0 z-40" onClick={() => setShowCategoryDropdown(false)} />
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -480,6 +601,80 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Bekor qilish</button>
                 <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Yaratish va Qo'shish</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-slate-800">Mahsulotni tahrirlash</h2>
+              <button onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="p-1 hover:bg-slate-100 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nomi</label>
+                <input type="text" required className="w-full border rounded-lg p-2" value={editFormData.name || ''} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg p-2"
+                    placeholder="Kategoriya qidirish..."
+                    value={editCategorySearch || categories.find(c => c.id === editFormData.category)?.name || ''}
+                    onChange={e => { setEditCategorySearch(e.target.value); setShowEditCategoryDropdown(true); }}
+                    onFocus={() => setShowEditCategoryDropdown(true)}
+                  />
+                  {showEditCategoryDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {categories.filter(cat => cat.name.toLowerCase().includes((editCategorySearch || '').toLowerCase())).map(cat => (
+                        <button key={cat.id} type="button" className={`w-full text-left px-3 py-2 hover:bg-slate-100 ${editFormData.category === cat.id ? 'bg-emerald-50 text-emerald-700' : ''}`}
+                          onClick={() => { setEditFormData({ ...editFormData, category: cat.id }); setEditCategorySearch(''); setShowEditCategoryDropdown(false); }}>
+                          {cat.name}
+                        </button>
+                      ))}
+                      <button type="button" className="w-full text-left px-3 py-2 text-blue-600 hover:bg-blue-50 border-t"
+                        onClick={() => { const name = prompt('Yangi kategoriya nomi:'); if (name?.trim()) { const newCat = { id: generateId(), name: name.trim() }; onUpdateCategories([...categories, newCat]); setEditFormData({ ...editFormData, category: newCat.id }); setShowEditCategoryDropdown(false); } }}>
+                        + Yangi kategoriya
+                      </button>
+                    </div>
+                  )}
+                  {showEditCategoryDropdown && <div className="fixed inset-0 z-40" onClick={() => setShowEditCategoryDropdown(false)} />}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tannarx</label>
+                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.priceBuy || 0} onChange={e => setEditFormData({ ...editFormData, priceBuy: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv narxi</label>
+                  <input type="number" required className="w-full border rounded-lg p-2" value={editFormData.priceSell || 0} onChange={e => setEditFormData({ ...editFormData, priceSell: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Qoldiq</label>
+                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.stock || 0} onChange={e => setEditFormData({ ...editFormData, stock: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Min. chegara</label>
+                  <input type="number" className="w-full border rounded-lg p-2" value={editFormData.minStock || 0} onChange={e => setEditFormData({ ...editFormData, minStock: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button type="button" onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg">Bekor qilish</button>
+                <button type="submit" className="flex-1 py-2 bg-emerald-600 text-white rounded-lg flex items-center justify-center gap-2">
+                  <Check className="w-4 h-4" /> Saqlash
+                </button>
               </div>
             </form>
           </div>

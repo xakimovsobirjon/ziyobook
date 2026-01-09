@@ -3,9 +3,13 @@ import {
     signOut as firebaseSignOut,
     onAuthStateChanged,
     User,
-    createUserWithEmailAndPassword
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    updatePassword,
+    reauthenticateWithCredential,
+    EmailAuthProvider
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 // Admin data interface
@@ -103,4 +107,26 @@ export const deleteAdmin = async (uid: string): Promise<void> => {
 // Subscribe to auth state changes
 export const subscribeToAuth = (callback: (user: User | null) => void): (() => void) => {
     return onAuthStateChanged(auth, callback);
+};
+
+// Update admin store name
+export const updateAdminStoreName = async (uid: string, newName: string): Promise<void> => {
+    const docRef = doc(db, 'admins', uid);
+    await updateDoc(docRef, { storeName: newName });
+};
+
+// Update user password
+
+export const reauthenticateUser = async (user: User, password: string): Promise<void> => {
+    const credential = EmailAuthProvider.credential(user.email!, password);
+    await reauthenticateWithCredential(user, credential);
+};
+
+export const updateUserPassword = async (user: User, newPassword: string): Promise<void> => {
+    await updatePassword(user, newPassword);
+};
+
+// Send password reset email
+export const resetUserPassword = async (email: string): Promise<void> => {
+    await sendPasswordResetEmail(auth, email);
 };

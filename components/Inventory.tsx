@@ -1,14 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { Product } from '../types';
-import { Plus, Search, Edit2, Trash2, AlertCircle, Image as ImageIcon, ScanBarcode, Upload, X, Loader2, Check } from 'lucide-react';
-import { generateId, convertFileToBase64 } from '../services/storage';
+import { Product, Category } from '../types';
+import { Plus, Search, Edit2, Trash2, AlertCircle, Image as ImageIcon, ScanBarcode, Upload, X, Loader2, Check, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { generateId, uploadProductImage } from '../services/storage';
 
 interface InventoryProps {
   products: Product[];
   onUpdateProducts: (products: Product[]) => Promise<void>;
+  categories: Category[];
+  onUpdateCategories: (categories: Category[]) => void;
 }
 
-const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => {
+const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categories, onUpdateCategories }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -21,6 +23,33 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '', category: '', priceBuy: 0, priceSell: 0, stock: 0, minStock: 5, imageUrl: '', barcode: ''
   });
+
+  // Category creation state
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categorySearch, setCategorySearch] = useState('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  // Category tabs state
+  // Category tabs state
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number, left: number }>({ top: 0, left: 0 });
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const { current } = scrollRef;
+      const scrollAmount = 200;
+      if (direction === 'left') {
+        current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else {
+        current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    }
+  };
 
   // PRODUCT MODAL HANDLERS
   const handleOpenModal = (product?: Product) => {
@@ -81,24 +110,60 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
     }
   };
 
+  const [isUploading, setIsUploading] = useState(false);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const base64 = await convertFileToBase64(file);
-        setFormData({ ...formData, imageUrl: base64 });
+        setIsUploading(true);
+        const imageUrl = await uploadProductImage(file);
+        setFormData({ ...formData, imageUrl });
       } catch (error) {
         console.error("Image upload error:", error);
         alert("Rasm yuklashda xatolik bo'ldi");
+      } finally {
+        setIsUploading(false);
       }
     }
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.barcode && p.barcode.includes(searchTerm))
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.barcode && p.barcode.includes(searchTerm));
+    const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Category handlers
+  const [categoryDeleteConfirm, setCategoryDeleteConfirm] = useState<string | null>(null);
+
+  // Category handlers
+  const handleDeleteCategoryClick = (catId: string) => {
+    const productsInCategory = products.filter(p => p.category === catId);
+    if (productsInCategory.length > 0) {
+      alert(`Bu kategoriyada ${productsInCategory.length} ta mahsulot bor. Avval mahsulotlarni boshqa kategoriyaga o'tkazing.`);
+      return;
+    }
+    setCategoryDeleteConfirm(catId);
+    setCategoryMenuOpen(null);
+  };
+
+  const handleConfirmDeleteCategory = () => {
+    if (!categoryDeleteConfirm) return;
+    onUpdateCategories(categories.filter(c => c.id !== categoryDeleteConfirm));
+    if (selectedCategory === categoryDeleteConfirm) setSelectedCategory('all');
+    setCategoryDeleteConfirm(null);
+    // Show success toast logic reuse if possible or just rely on react reactivity
+  };
+
+  const handleSaveEditCategory = () => {
+    if (!editingCategory || !editCategoryName.trim()) return;
+    onUpdateCategories(categories.map(c => c.id === editingCategory.id ? { ...c, name: editCategoryName.trim() } : c));
+    setEditingCategory(null);
+    setEditCategoryName('');
+  };
 
   return (
     <div className="space-y-6">
@@ -118,6 +183,114 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
         >
           <Plus className="w-4 h-4 mr-2" /> Yangi Kitob
         </button>
+      </div>
+
+      {/* Category Tabs Navbar */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-1">
+        <div className="relative flex items-center">
+          {/* Left Arrow */}
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 z-10 p-2 bg-gradient-to-r from-white via-white to-transparent hover:text-slate-900 text-slate-500 h-full flex items-center rounded-l-xl"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <div
+            ref={scrollRef}
+            className="flex-1 w-0 flex items-center gap-2 overflow-x-auto px-12 py-2 scroll-smooth no-scrollbar"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            <style>{`
+              .no-scrollbar::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === 'all'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+            >
+              Hammasi ({products.length})
+            </button>
+            {categories.map(cat => (
+              <div key={cat.id} className="relative flex items-center">
+                <div
+                  className={`flex items-center rounded-lg overflow-hidden transition-colors border ${selectedCategory === cat.id
+                    ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-200 ring-offset-1'
+                    : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 hover:border-slate-300'
+                    }`}
+                >
+                  <button
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className="px-4 py-2 text-sm font-medium whitespace-nowrap bg-transparent focus:outline-none"
+                  >
+                    {cat.name} ({products.filter(p => p.category === cat.id).length})
+                  </button>
+                  {/* Three-dot dropdown menu */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (categoryMenuOpen === cat.id) {
+                        setCategoryMenuOpen(null);
+                      } else {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMenuPos({ top: rect.bottom + 6, left: rect.right - 150 });
+                        setCategoryMenuOpen(cat.id);
+                      }
+                    }}
+                    className={`px-1.5 py-2 transition-colors border-l focus:outline-none h-full flex items-center ${selectedCategory === cat.id
+                      ? 'border-emerald-500 hover:bg-emerald-700 text-emerald-100'
+                      : 'border-slate-200 hover:bg-slate-300 text-slate-400'
+                      }`}
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                </div>
+                {/* Dropdown menu */}
+                {categoryMenuOpen === cat.id && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setCategoryMenuOpen(null)} />
+                    <div
+                      className="fixed z-50 bg-white border rounded-lg shadow-lg py-1 min-w-[145px]"
+                      style={{ top: menuPos.top, left: menuPos.left }}
+                    >
+                      <button
+                        onClick={() => { setEditingCategory(cat); setEditCategoryName(cat.name); setCategoryMenuOpen(null); }}
+                        className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+                      >
+                        <Edit2 className="w-4 h-4 text-blue-600" /> Tahrirlash
+                      </button>
+                      <button
+                        onClick={() => { handleDeleteCategoryClick(cat.id); }}
+                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" /> O'chirish
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+            {/* Add New Category Button */}
+            <button
+              onClick={() => setShowNewCategory(true)}
+              className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 flex items-center gap-1 whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" /> Yangi kategoriya
+            </button>
+          </div>
+
+          {/* Right Arrow */}
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 z-10 p-2 bg-gradient-to-l from-white via-white to-transparent hover:text-slate-900 text-slate-500 h-full flex items-center rounded-r-xl"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
@@ -163,7 +336,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
                   </td>
                   <td className="p-3 font-medium text-slate-800">{product.name}</td>
                   <td className="p-3 text-slate-600">
-                    <span className="px-2 py-1 bg-slate-100 rounded text-xs">{product.category}</span>
+                    <span className="px-2 py-1 bg-slate-100 rounded text-xs">{categories.find(c => c.id === product.category)?.name || product.category}</span>
                   </td>
                   <td className="p-3 text-right text-slate-600">{product.priceBuy.toLocaleString()}</td>
                   <td className="p-3 text-right font-medium text-emerald-600">{product.priceSell.toLocaleString()}</td>
@@ -196,149 +369,354 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts }) => 
       </div>
 
       {/* Product Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 className="text-xl font-bold mb-4">{editingProduct ? "Kitobni tahrirlash" : "Yangi kitob qo'shish"}</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Shtrix-kod (Skaner)</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    className="w-full border rounded-lg p-2 pl-9"
-                    value={formData.barcode || ''}
-                    onChange={e => setFormData({ ...formData, barcode: e.target.value })}
-                    placeholder="Skaner qiling..."
-                  />
-                  <ScanBarcode className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+      {
+        isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+              <h3 className="text-xl font-bold mb-4">{editingProduct ? "Kitobni tahrirlash" : "Yangi kitob qo'shish"}</h3>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Shtrix-kod (Skaner)</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="w-full border rounded-lg p-2 pl-9"
+                      value={formData.barcode || ''}
+                      onChange={e => setFormData({ ...formData, barcode: e.target.value })}
+                      placeholder="Skaner qiling..."
+                    />
+                    <ScanBarcode className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex gap-4 items-start">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Kitob rasmi</label>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Rasm yuklash
-                    </button>
-                    {formData.imageUrl && (
+                <div className="flex gap-4 items-start">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Kitob rasmi</label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
+                    <div className="flex items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                        className="text-red-500 hover:text-red-700 p-2"
-                        title="Rasmni o'chirish"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm transition-colors border border-slate-300 disabled:opacity-50"
                       >
-                        <X className="w-5 h-5" />
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Yuklanmoqda...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Rasm yuklash
+                          </>
+                        )}
                       </button>
+                      {formData.imageUrl && !isUploading && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                          className="text-red-500 hover:text-red-700 p-2"
+                          title="Rasmni o'chirish"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="w-20 h-28 bg-slate-100 rounded border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
+                    {formData.imageUrl ? (
+                      <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-slate-300" />
                     )}
                   </div>
                 </div>
-                <div className="w-20 h-28 bg-slate-100 rounded border border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
-                  {formData.imageUrl ? (
-                    <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-8 h-8 text-slate-300" />
-                  )}
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Kitob nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
-                <input type="text" required className="w-full border rounded-lg p-2" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Tannarx</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.priceBuy} onChange={e => setFormData({ ...formData, priceBuy: Number(e.target.value) })} />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Kitob nomi</label>
+                  <input type="text" required className="w-full border rounded-lg p-2" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv Narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.priceSell} onChange={e => setFormData({ ...formData, priceSell: Number(e.target.value) })} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Qoldiq</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.stock} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Min. Chegara</label>
-                  <input type="number" required className="w-full border rounded-lg p-2" value={formData.minStock} onChange={e => setFormData({ ...formData, minStock: Number(e.target.value) })} />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg disabled:opacity-50">Bekor qilish</button>
-                <button type="submit" disabled={isSaving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Saqlanmoqda...
-                    </>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
+                  {showNewCategory ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        className="flex-1 border rounded-lg p-2"
+                        placeholder="Yangi kategoriya nomi..."
+                        value={newCategoryName}
+                        onChange={e => setNewCategoryName(e.target.value)}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newCategoryName.trim()) {
+                            const newCat: Category = { id: generateId(), name: newCategoryName.trim() };
+                            onUpdateCategories([...categories, newCat]);
+                            setFormData({ ...formData, category: newCat.id });
+                            setNewCategoryName('');
+                            setShowNewCategory(false);
+                          }
+                        }}
+                        className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowNewCategory(false); setNewCategoryName(''); }}
+                        className="px-3 py-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   ) : (
-                    'Saqlash'
+                    <div className="relative">
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <input
+                            type="text"
+                            className="w-full border rounded-lg p-2"
+                            placeholder="Kategoriya qidirish..."
+                            value={categorySearch || categories.find(c => c.id === formData.category)?.name || ''}
+                            onChange={e => {
+                              setCategorySearch(e.target.value);
+                              setShowCategoryDropdown(true);
+                              if (!e.target.value) {
+                                setFormData({ ...formData, category: '' });
+                              }
+                            }}
+                            onFocus={() => setShowCategoryDropdown(true)}
+                          />
+                          {showCategoryDropdown && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {categories
+                                .filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase()))
+                                .map(cat => (
+                                  <button
+                                    key={cat.id}
+                                    type="button"
+                                    className={`w-full text-left px-3 py-2 hover:bg-slate-100 ${formData.category === cat.id ? 'bg-emerald-50 text-emerald-700' : ''}`}
+                                    onClick={() => {
+                                      setFormData({ ...formData, category: cat.id });
+                                      setCategorySearch('');
+                                      setShowCategoryDropdown(false);
+                                    }}
+                                  >
+                                    {cat.name}
+                                  </button>
+                                ))}
+                              {categories.filter(cat => cat.name.toLowerCase().includes((categorySearch || '').toLowerCase())).length === 0 && (
+                                <div className="px-3 py-2 text-slate-400 text-sm">Topilmadi</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowNewCategory(true)}
+                          className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center gap-1"
+                          title="Yangi kategoriya"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {/* Click outside to close */}
+                      {showCategoryDropdown && (
+                        <div className="fixed inset-0 z-40" onClick={() => setShowCategoryDropdown(false)} />
+                      )}
+                    </div>
                   )}
-                </button>
-              </div>
-            </form>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Tannarx</label>
+                    <input type="number" required className="w-full border rounded-lg p-2" value={formData.priceBuy} onChange={e => setFormData({ ...formData, priceBuy: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Sotuv Narxi</label>
+                    <input type="number" required className="w-full border rounded-lg p-2" value={formData.priceSell} onChange={e => setFormData({ ...formData, priceSell: Number(e.target.value) })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Qoldiq</label>
+                    <input type="number" required className="w-full border rounded-lg p-2" value={formData.stock} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Min. Chegara</label>
+                    <input type="number" required className="w-full border rounded-lg p-2" value={formData.minStock} onChange={e => setFormData({ ...formData, minStock: Number(e.target.value) })} />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg disabled:opacity-50">Bekor qilish</button>
+                  <button type="submit" disabled={isSaving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Saqlanmoqda...
+                      </>
+                    ) : (
+                      'Saqlash'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-8 h-8 text-red-600" />
+      {
+        deleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">O'chirishni tasdiqlang</h3>
+                <p className="text-slate-600 mb-6">Rostdan ham bu kitobni o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setDeleteConfirm(null)}
+                    disabled={isSaving}
+                    className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg disabled:opacity-50"
+                  >
+                    Bekor qilish
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    disabled={isSaving}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        O'chirilmoqda...
+                      </>
+                    ) : (
+                      "Ha, o'chirish"
+                    )}
+                  </button>
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">O'chirishni tasdiqlang</h3>
-              <p className="text-slate-600 mb-6">Rostdan ham bu kitobni o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi.</p>
-              <div className="flex gap-3">
+            </div>
+          </div>
+        )
+      }
+
+      {/* New Category Modal */}
+      {
+        showNewCategory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">Yangi kategoriya</h3>
+              <input
+                type="text"
+                className="w-full border rounded-lg p-2 mb-4"
+                placeholder="Kategoriya nomi..."
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-2">
                 <button
-                  onClick={() => setDeleteConfirm(null)}
-                  disabled={isSaving}
-                  className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg disabled:opacity-50"
+                  onClick={() => { setShowNewCategory(false); setNewCategoryName(''); }}
+                  className="flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg"
                 >
                   Bekor qilish
                 </button>
                 <button
-                  onClick={handleDeleteConfirm}
-                  disabled={isSaving}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={() => {
+                    if (newCategoryName.trim()) {
+                      onUpdateCategories([...categories, { id: generateId(), name: newCategoryName.trim() }]);
+                      setNewCategoryName('');
+                      setShowNewCategory(false);
+                    }
+                  }}
+                  className="flex-1 py-2 bg-emerald-600 text-white rounded-lg"
                 >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      O'chirilmoqda...
-                    </>
-                  ) : (
-                    "Ha, o'chirish"
-                  )}
+                  Yaratish
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+
+      {/* Edit Category Modal */}
+      {
+        editingCategory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-2xl">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">Kategoriyani tahrirlash</h3>
+              <input
+                type="text"
+                className="w-full border rounded-lg p-2 mb-4"
+                placeholder="Kategoriya nomi..."
+                value={editCategoryName}
+                onChange={e => setEditCategoryName(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setEditingCategory(null); setEditCategoryName(''); }}
+                  className="flex-1 py-2 bg-slate-200 text-slate-700 rounded-lg"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  onClick={handleSaveEditCategory}
+                  className="flex-1 py-2 bg-emerald-600 text-white rounded-lg"
+                >
+                  Saqlash
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+      {/* Category Delete Confirmation Modal */}
+      {
+        categoryDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Trash2 className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Kategoriyani o'chirish</h3>
+                <p className="text-slate-600 mb-6">Rostdan ham ushbu kategoriyani o'chirmoqchimisiz?</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setCategoryDeleteConfirm(null)}
+                    className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg"
+                  >
+                    Bekor qilish
+                  </button>
+                  <button
+                    onClick={handleConfirmDeleteCategory}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
+                  >
+                    Ha, o'chirish
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 };
 

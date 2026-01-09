@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Loader2, LogOut } from 'lucide-react';
+import { Menu, Loader2 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
@@ -13,16 +13,18 @@ import Expenses from './components/Expenses';
 import History from './components/History';
 import Login from './components/Login';
 import SuperAdmin from './components/SuperAdmin';
+import Settings from './components/Settings';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { getStoreData, saveStoreData, subscribeToStoreData } from './services/storage';
-import { StoreData, Product, Partner, Transaction, Employee, TransactionType } from './types';
+import { updateAdminStoreName } from './services/auth';
+import { StoreData, Product, Partner, Transaction, Employee, TransactionType, Category } from './types';
 
 // Main App Content (when logged in)
 const AppContent: React.FC = () => {
-  const { adminData, storeId, logout } = useAuth();
+  const { adminData, storeId, logout, user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [data, setData] = useState<StoreData>({ products: [], partners: [], employees: [], transactions: [] });
+  const [data, setData] = useState<StoreData>({ products: [], partners: [], employees: [], transactions: [], categories: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +72,7 @@ const AppContent: React.FC = () => {
   const updateProducts = (products: Product[]) => updateData({ ...data, products });
   const updatePartners = (partners: Partner[]) => updateData({ ...data, partners });
   const updateEmployees = (employees: Employee[]) => updateData({ ...data, employees });
+  const updateCategories = (categories: Category[]) => updateData({ ...data, categories });
 
   // Generic Transaction Handler (Used for Expenses, Salaries, Supply, Debt Payment)
   const addTransaction = (transaction: Transaction) => {
@@ -189,11 +192,11 @@ const AppContent: React.FC = () => {
       case 'dashboard':
         return <Dashboard products={data.products} transactions={data.transactions} partners={data.partners} employees={data.employees} />;
       case 'pos':
-        return <POS products={data.products} customers={data.partners.filter(p => p.type === 'CUSTOMER')} onTransaction={handlePosTransaction} />;
+        return <POS products={data.products} customers={data.partners.filter(p => p.type === 'CUSTOMER')} onTransaction={handlePosTransaction} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} />;
       case 'supply':
-        return <Supply products={data.products} suppliers={data.partners.filter(p => p.type === 'SUPPLIER')} onSupply={handleSupplyTransaction} onUpdateProducts={updateProducts} />;
+        return <Supply products={data.products} suppliers={data.partners.filter(p => p.type === 'SUPPLIER')} onTransaction={handleSupplyTransaction} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} />;
       case 'inventory':
-        return <Inventory products={data.products} onUpdateProducts={updateProducts} />;
+        return <Inventory products={data.products} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} />;
       case 'history':
         return <History transactions={data.transactions} onDeleteTransaction={deleteTransaction} onEditTransaction={editTransaction} />;
       case 'reports':
@@ -206,8 +209,27 @@ const AppContent: React.FC = () => {
         return <Expenses onAddExpense={addTransaction} />;
       case 'ai':
         return <AIAnalyst data={data} />;
+      case 'settings':
+        return <Settings adminData={adminData} onUpdateProfile={handleUpdateProfile} onLogout={logout} />;
       default:
         return <Dashboard products={data.products} transactions={data.transactions} partners={data.partners} employees={data.employees} />;
+    }
+  };
+
+  const handleUpdateProfile = async (newName: string) => {
+    if (user && adminData) {
+      await updateAdminStoreName(user.uid, newName);
+      // Local update is handled by subscription or page refresh, but we can force reload if needed
+      // Actually, since we subscribe to auth state changes in many places, it might reflect, 
+      // but adminData comes from useAuth which fetches once.
+      // Ideally we would update the local context state, but useAuth might not expose a setter.
+      // For now, let's reload the page to ensure store name updates everywhere or trust the subscription?
+      // AuthContext typically doesn't auto-reload adminData on firestore change unless subscribed.
+      // Let's assume user accepts a refresh or we can try to force it.
+      // For simplicity: reload page after 1s or just let the user see it on next login?
+      // Better: force a reload or re-fetch in AuthContext.
+      // Since we don't have access to setAdminData here easily, we rely on page reload for now.
+      window.location.reload();
     }
   };
 
@@ -222,7 +244,8 @@ const AppContent: React.FC = () => {
       crm: 'Hamkorlar',
       employees: 'Hodimlar',
       expenses: 'Harajatlar',
-      ai: 'AI Yordamchi'
+      ai: 'AI Yordamchi',
+      settings: 'Sozlamalar'
     };
     return titles[activeTab] || 'ZiyoBook';
   };
@@ -252,13 +275,7 @@ const AppContent: React.FC = () => {
             <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold border border-emerald-200">
               {adminData?.storeName?.charAt(0)?.toUpperCase() || 'A'}
             </div>
-            <button
-              onClick={logout}
-              className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Chiqish"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+            {/* Logout moved to Settings page */}
           </div>
         </header>
 

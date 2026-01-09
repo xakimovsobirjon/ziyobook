@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Transaction, TransactionType } from '../types';
-import { Wallet, Plus } from 'lucide-react';
+import { Wallet, Plus, Check } from 'lucide-react';
 import { generateId } from '../services/storage';
 
 interface ExpensesProps {
@@ -10,6 +10,7 @@ interface ExpensesProps {
 const Expenses: React.FC<ExpensesProps> = ({ onAddExpense }) => {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +27,22 @@ const Expenses: React.FC<ExpensesProps> = ({ onAddExpense }) => {
     onAddExpense(transaction);
     setAmount('');
     setNote('');
-    alert("Harajat saqlandi!");
+
+    // Show toast
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   return (
     <div className="max-w-md mx-auto space-y-6">
+      {/* Success Toast */}
+      {showToast && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+          <Check className="w-5 h-5" />
+          <span>Harajat muvaffaqiyatli saqlandi!</span>
+        </div>
+      )}
+
       <h2 className="text-2xl font-bold text-slate-800 text-center">Harajatlar Kiritish</h2>
       <div className="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
         <div className="flex justify-center mb-6">
@@ -41,10 +53,10 @@ const Expenses: React.FC<ExpensesProps> = ({ onAddExpense }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Summa</label>
-            <input 
-              type="number" 
-              required 
-              className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
+            <input
+              type="number"
+              required
+              className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
               placeholder="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -52,10 +64,10 @@ const Expenses: React.FC<ExpensesProps> = ({ onAddExpense }) => {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Izoh (Sabab)</label>
-            <input 
-              type="text" 
-              required 
-              className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
+            <input
+              type="text"
+              required
+              className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
               placeholder="Masalan: Ijara haqi, Svet, Tushlik"
               value={note}
               onChange={(e) => setNote(e.target.value)}

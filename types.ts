@@ -15,13 +15,18 @@ export enum PaymentMethod {
 export interface Product {
   id: string;
   name: string;
-  category: string;
+  category: string; // Category ID or name
   priceBuy: number; // Tannarx
   priceSell: number; // Sotuv narxi
   stock: number;
   minStock: number; // Ogohlantirish chegarasi
   barcode?: string; // Shtrix kod
   imageUrl?: string; // Rasm uchun havola
+}
+
+export interface Category {
+  id: string;
+  name: string;
 }
 
 export interface Partner {
@@ -62,4 +67,5 @@ export interface StoreData {
   partners: Partner[];
   employees: Employee[];
   transactions: Transaction[];
+  categories: Category[];
 }

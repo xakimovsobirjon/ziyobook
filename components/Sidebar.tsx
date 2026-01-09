@@ -1,5 +1,6 @@
 import React from 'react';
-import { LayoutDashboard, ShoppingCart, BookOpen, Users, BarChart3, Bot, Settings, History, Wallet, Briefcase, PackagePlus } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, BookOpen, Users, BarChart3, Bot, Settings, History, Wallet, Briefcase, PackagePlus, Shield } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -9,6 +10,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isMobileOpen, setIsMobileOpen }) => {
+  const { adminData } = useAuth();
   const menuItems = [
     { id: 'dashboard', label: 'Bosh sahifa', icon: LayoutDashboard },
     { id: 'pos', label: 'Savdo (POS)', icon: ShoppingCart },
@@ -49,8 +51,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isMobileOpen
                     setIsMobileOpen(false);
                   }}
                   className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors ${activeTab === item.id
-                      ? 'bg-emerald-600 text-white shadow-lg'
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-emerald-600 text-white shadow-lg'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                     }`}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
@@ -61,11 +63,30 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isMobileOpen
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center px-4 py-3 text-slate-400 hover:text-white cursor-pointer">
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          {adminData?.isSuperAdmin && (
+            <button
+              onClick={() => window.location.href = '/?superadmin=true'}
+              className="flex items-center w-full px-4 py-3 rounded-lg transition-colors cursor-pointer text-amber-500 hover:text-amber-400 hover:bg-slate-800"
+            >
+              <Shield className="w-5 h-5 mr-3" />
+              <span className="font-medium">Admin Panel</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              setActiveTab('settings');
+              setIsMobileOpen(false);
+            }}
+            className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors cursor-pointer ${activeTab === 'settings'
+              ? 'bg-emerald-600 text-white shadow-lg'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+          >
             <Settings className="w-5 h-5 mr-3" />
-            <span>Sozlamalar</span>
-          </div>
+            <span className="font-medium">Sozlamalar</span>
+          </button>
         </div>
       </aside>
     </>
