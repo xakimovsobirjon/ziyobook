@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Transaction, TransactionType, Product, Partner } from '../types';
-import { Trash2, Calendar, ArrowUpRight, ArrowDownLeft, Wallet, UserCheck, Eye, X, Pencil, Plus, Minus, Loader2, Check } from 'lucide-react';
+import { Transaction, TransactionType, PaymentMethod } from '../types';
+import { Trash2, Calendar, ArrowUpRight, ArrowDownLeft, Wallet, UserCheck, Eye, X, Pencil, Plus, Minus, Loader2, Check, Printer, ShoppingCart } from 'lucide-react';
 
 interface HistoryProps {
   transactions: Transaction[];
@@ -14,6 +14,7 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [printReceipt, setPrintReceipt] = useState<Transaction | null>(null);
 
   const filtered = transactions.filter(t => {
     if (filterType === 'ALL') return true;
@@ -40,6 +41,10 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
       case TransactionType.DEBT_PAYMENT: return 'Qarz to\'lovi';
       default: return type;
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   /* Edit State */
@@ -200,6 +205,15 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex justify-center space-x-2">
+                      {t.type === TransactionType.SALE && (
+                        <button
+                          onClick={() => setPrintReceipt(t)}
+                          className="p-2 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors"
+                          title="Chek chop etish"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => setSelectedTransaction(t)}
                         className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
@@ -506,6 +520,96 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Receipt Modal */}
+      {printReceipt && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
+          <div className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden print:shadow-none print:w-full print:max-w-none print:rounded-none print:bg-white print:!bg-white">
+            {/* Header */}
+            <div className="bg-emerald-600 dark:bg-emerald-700 text-white p-6 text-center print:bg-white print:text-black print:border-b-2 print:border-black print:p-4">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 print:hidden">
+                <ShoppingCart className="w-8 h-8" />
+              </div>
+              <h1 className="text-2xl font-bold uppercase tracking-widest print:text-black print:text-xl">ZiyoBook</h1>
+              <p className="text-emerald-100 dark:text-emerald-200 text-sm mt-1 print:text-black">Kitob do'koni</p>
+            </div>
+
+            {/* Receipt Info */}
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 text-center print:border-b print:border-gray-300 print:py-2">
+              <p className="text-slate-600 dark:text-slate-400 text-sm print:text-black">
+                {new Date(printReceipt.date).toLocaleDateString('uz-UZ', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+              <p className="text-slate-500 dark:text-slate-500 text-xs mt-1 font-mono print:text-black">
+                Chek: #{printReceipt.id.slice(-8).toUpperCase()}
+              </p>
+            </div>
+
+            {/* Items */}
+            <div className="px-6 py-4 space-y-3 max-h-60 overflow-y-auto print:max-h-none print:overflow-visible print:py-2 print:bg-white">
+              {printReceipt.items?.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center py-2 border-b border-dashed border-slate-200 dark:border-slate-700 last:border-0 print:border-gray-300 print:bg-white">
+                  <div className="flex-1">
+                    <p className="text-slate-800 dark:text-white font-medium text-sm print:!text-black">{item.name}</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs print:!text-gray-700">
+                      {item.priceSell.toLocaleString()} × {item.qty} dona
+                    </p>
+                  </div>
+                  <span className="font-bold text-slate-800 dark:text-white print:!text-black">
+                    {(item.priceSell * item.qty).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Total */}
+            <div className="mx-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-200 dark:border-emerald-800 print:!bg-white print:border-2 print:border-black print:rounded-none print:mx-4">
+              <div className="flex justify-between items-center">
+                <span className="text-emerald-800 dark:text-emerald-300 font-semibold print:!text-black">Jami summa:</span>
+                <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 print:!text-black">{printReceipt.totalAmount.toLocaleString()} <span className="text-sm print:!text-black">so'm</span></span>
+              </div>
+              <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-800 print:!text-black print:border-gray-400">
+                <span className="print:!text-black">To'lov turi:</span>
+                <span className="font-medium print:!text-black">
+                  {printReceipt.paymentMethod === PaymentMethod.CASH ? '💵 Naqd' :
+                    printReceipt.paymentMethod === PaymentMethod.CARD ? '💳 Karta' : '📝 Nasiya'}
+                </span>
+              </div>
+            </div>
+
+            {/* Thank You Message */}
+            <div className="text-center py-4 px-6 print:py-2">
+              <p className="text-slate-500 dark:text-slate-400 text-sm print:text-black">
+                ✨ Xaridingiz uchun rahmat!
+              </p>
+              <p className="text-slate-400 dark:text-slate-500 text-xs mt-1 print:text-gray-700">
+                Har doim biz bilan bo'ling
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="p-4 bg-slate-100 dark:bg-slate-900/50 flex gap-3 no-print">
+              <button
+                onClick={() => setPrintReceipt(null)}
+                className="flex-1 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl font-medium transition-colors"
+              >
+                Yopish
+              </button>
+              <button
+                onClick={handlePrint}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30"
+              >
+                🖨️ Chop etish
+              </button>
             </div>
           </div>
         </div>

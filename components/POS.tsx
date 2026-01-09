@@ -441,7 +441,7 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
       {/* Receipt Modal */}
       {showReceipt && (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
-          <div className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden print:shadow-none print:w-full print:max-w-none print:rounded-none print:from-white print:to-white">
+          <div className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden print:shadow-none print:w-full print:max-w-none print:rounded-none print:bg-white print:!bg-white">
             {/* Header */}
             <div className="bg-emerald-600 dark:bg-emerald-700 text-white p-6 text-center print:bg-white print:text-black print:border-b-2 print:border-black print:p-4">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 print:hidden">
@@ -468,16 +468,16 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
             </div>
 
             {/* Items */}
-            <div className="px-6 py-4 space-y-3 max-h-60 overflow-y-auto print:max-h-none print:overflow-visible print:py-2">
+            <div className="px-6 py-4 space-y-3 max-h-60 overflow-y-auto print:max-h-none print:overflow-visible print:py-2 print:bg-white">
               {showReceipt.items?.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center py-2 border-b border-dashed border-slate-200 dark:border-slate-700 last:border-0 print:border-gray-300">
+                <div key={idx} className="flex justify-between items-center py-2 border-b border-dashed border-slate-200 dark:border-slate-700 last:border-0 print:border-gray-300 print:bg-white">
                   <div className="flex-1">
-                    <p className="text-slate-800 dark:text-white font-medium text-sm print:text-black">{item.name}</p>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs print:text-gray-700">
+                    <p className="text-slate-800 dark:text-white font-medium text-sm print:!text-black">{item.name}</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs print:!text-gray-700">
                       {item.priceSell.toLocaleString()} × {item.qty} dona
                     </p>
                   </div>
-                  <span className="font-bold text-slate-800 dark:text-white print:text-black">
+                  <span className="font-bold text-slate-800 dark:text-white print:!text-black">
                     {(item.priceSell * item.qty).toLocaleString()}
                   </span>
                 </div>
@@ -485,14 +485,14 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
             </div>
 
             {/* Total */}
-            <div className="mx-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-200 dark:border-emerald-800 print:bg-white print:border-2 print:border-black print:rounded-none print:mx-4">
+            <div className="mx-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-200 dark:border-emerald-800 print:!bg-white print:border-2 print:border-black print:rounded-none print:mx-4">
               <div className="flex justify-between items-center">
-                <span className="text-emerald-800 dark:text-emerald-300 font-semibold print:text-black">Jami summa:</span>
-                <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 print:text-black">{showReceipt.totalAmount.toLocaleString()} <span className="text-sm">so'm</span></span>
+                <span className="text-emerald-800 dark:text-emerald-300 font-semibold print:!text-black">Jami summa:</span>
+                <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 print:!text-black">{showReceipt.totalAmount.toLocaleString()} <span className="text-sm print:!text-black">so'm</span></span>
               </div>
-              <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-800 print:text-black print:border-gray-400">
-                <span>To'lov turi:</span>
-                <span className="font-medium print:text-black">
+              <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400 mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-800 print:!text-black print:border-gray-400">
+                <span className="print:!text-black">To'lov turi:</span>
+                <span className="font-medium print:!text-black">
                   {showReceipt.paymentMethod === PaymentMethod.CASH ? '💵 Naqd' :
                     showReceipt.paymentMethod === PaymentMethod.CARD ? '💳 Karta' : '📝 Nasiya'}
                 </span>
