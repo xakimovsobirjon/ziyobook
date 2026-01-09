@@ -18,7 +18,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { getStoreData, saveStoreData, subscribeToStoreData } from './services/storage';
 import { updateAdminStoreName } from './services/auth';
-import { StoreData, Product, Partner, Transaction, Employee, TransactionType, Category } from './types';
+import { StoreData, Product, Partner, Transaction, Employee, TransactionType, Category, StoreSettings } from './types';
 
 // Main App Content (when logged in)
 const AppContent: React.FC = () => {
@@ -74,6 +74,7 @@ const AppContent: React.FC = () => {
   const updatePartners = (partners: Partner[]) => updateData({ ...data, partners });
   const updateEmployees = (employees: Employee[]) => updateData({ ...data, employees });
   const updateCategories = (categories: Category[]) => updateData({ ...data, categories });
+  const updateSettings = (settings: StoreSettings) => updateData({ ...data, settings });
 
   // Generic Transaction Handler (Used for Expenses, Salaries, Supply, Debt Payment)
   const addTransaction = (transaction: Transaction) => {
@@ -193,7 +194,7 @@ const AppContent: React.FC = () => {
       case 'dashboard':
         return <Dashboard products={data.products} transactions={data.transactions} partners={data.partners} employees={data.employees} />;
       case 'pos':
-        return <POS products={data.products} customers={data.partners.filter(p => p.type === 'CUSTOMER')} onTransaction={handlePosTransaction} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} />;
+        return <POS products={data.products} customers={data.partners.filter(p => p.type === 'CUSTOMER')} onTransaction={handlePosTransaction} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} allowNegativeStock={data.settings?.allowNegativeStock ?? true} />;
       case 'supply':
         return <Supply products={data.products} suppliers={data.partners.filter(p => p.type === 'SUPPLIER')} onTransaction={handleSupplyTransaction} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} />;
       case 'inventory':
@@ -211,7 +212,7 @@ const AppContent: React.FC = () => {
       case 'ai':
         return <AIAnalyst data={data} />;
       case 'settings':
-        return <Settings adminData={adminData} onUpdateProfile={handleUpdateProfile} onLogout={logout} />;
+        return <Settings adminData={adminData} onUpdateProfile={handleUpdateProfile} onLogout={logout} storeSettings={data.settings} onUpdateSettings={updateSettings} />;
       default:
         return <Dashboard products={data.products} transactions={data.transactions} partners={data.partners} employees={data.employees} />;
     }

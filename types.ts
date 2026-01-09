@@ -62,10 +62,15 @@ export interface Transaction {
   profit?: number; // Only calculated for Sales
 }
 
+export interface StoreSettings {
+  allowNegativeStock: boolean; // Minusga sotish
+}
+
 export interface StoreData {
   products: Product[];
   partners: Partner[];
   employees: Employee[];
   transactions: Transaction[];
   categories: Category[];
+  settings?: StoreSettings;
 }

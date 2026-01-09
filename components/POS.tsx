@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Product, CartItem, Partner, TransactionType, PaymentMethod, Transaction, Category } from '../types';
-import { Search, Plus, Minus, ShoppingCart, User, CreditCard, Trash, Image as ImageIcon, ScanBarcode, AlertCircle, Edit2, X, Check } from 'lucide-react';
+import { Search, Plus, Minus, ShoppingCart, User, CreditCard, Trash, Image as ImageIcon, ScanBarcode, AlertCircle, Edit2, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateId, getPOSSessionData, savePOSSessionData, clearPOSSessionData } from '../services/storage';
 
 interface POSProps {
@@ -10,11 +10,12 @@ interface POSProps {
   onUpdateProducts: (products: Product[]) => void;
   categories: Category[];
   onUpdateCategories: (categories: Category[]) => void;
+  allowNegativeStock: boolean;
 }
 
 import { useAuth } from '../contexts/AuthContext';
 
-const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateProducts, categories, onUpdateCategories }) => {
+const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateProducts, categories, onUpdateCategories, allowNegativeStock }) => {
   const { storeId } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -24,6 +25,9 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   const [showReceipt, setShowReceipt] = useState<Transaction | null>(null);
 
   // Edit product state
@@ -76,11 +80,30 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
     };
   }, [cart, selectedCustomerId, paymentMethod, isLoading, saveSessionDebounced]);
 
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const { current } = scrollRef;
+      const scrollAmount = 200;
+      if (direction === 'left') {
+        current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else {
+        current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    }
+  };
+
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
+      const currentQtyInCart = existing ? existing.qty : 0;
+
+      // Check stock limit if negative stock is disabled
+      if (!allowNegativeStock && (currentQtyInCart + 1) > product.stock) {
+        alert(`"${product.name}" omborda yetarli emas. Qoldiq: ${product.stock}`);
+        return prev;
+      }
+
       if (existing) {
-        // Removed stock limit check to allow negative sales
         return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
       }
       return [...prev, { ...product, qty: 1 }];
@@ -102,13 +125,14 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
 
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p =>
-    // Removed "p.stock > 0" filter to show all products
-    (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(searchTerm)))
-    );
-  }, [products, searchTerm]);
+    return products.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.barcode && p.barcode.includes(searchTerm));
+      const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchTerm, selectedCategory]);
 
   const removeFromCart = (id: string) => {
     setCart(prev => prev.filter(item => item.id !== id));
@@ -119,7 +143,14 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
       return prev.map(item => {
         if (item.id === id) {
           const newQty = item.qty + change;
-          // Removed maxStock check to allow overselling
+          const product = products.find(p => p.id === id);
+
+          // Check stock limit if negative stock is disabled and increasing quantity
+          if (!allowNegativeStock && change > 0 && product && newQty > product.stock) {
+            alert(`"${product.name}" omborda yetarli emas. Qoldiq: ${product.stock}`);
+            return item;
+          }
+
           if (newQty > 0) return { ...item, qty: newQty };
         }
         return item;
@@ -206,6 +237,56 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
       {/* Product List */}
       <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {/* Category Tabs */}
+        <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20">
+          <div className="relative flex items-center">
+            <button
+              onClick={() => scroll('left')}
+              className="absolute left-0 z-10 p-2 bg-gradient-to-r from-slate-50 dark:from-slate-800 via-slate-50 dark:via-slate-800 to-transparent hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-slate-400 h-full flex items-center"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div
+              ref={scrollRef}
+              className="flex-1 w-0 flex items-center gap-2 overflow-x-auto px-8 py-2 scroll-smooth no-scrollbar"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <style>{`
+                .no-scrollbar::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === 'all'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'
+                  }`}
+              >
+                Hammasi
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat.id
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'
+                    }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => scroll('right')}
+              className="absolute right-0 z-10 p-2 bg-gradient-to-l from-slate-50 dark:from-slate-800 via-slate-50 dark:via-slate-800 to-transparent hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-slate-400 h-full flex items-center"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
         <div className="p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -377,12 +458,12 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
               ))}
             </div>
 
-            <div className="border-t-2 border-dashed border-slate-300 pt-4 mb-6">
-              <div className="flex justify-between font-bold text-lg">
+            <div className="border-t-2 border-dashed border-slate-300 dark:border-slate-600 pt-4 mb-6">
+              <div className="flex justify-between font-bold text-lg text-slate-800 dark:text-white">
                 <span>Jami:</span>
                 <span>{showReceipt.totalAmount.toLocaleString()} so'm</span>
               </div>
-              <div className="flex justify-between text-sm text-slate-500 mt-1">
+              <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400 mt-1">
                 <span>To'lov turi:</span>
                 <span>
                   {showReceipt.paymentMethod === PaymentMethod.CASH ? 'Naqd' :
@@ -391,14 +472,14 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
               </div>
             </div>
 
-            <div className="text-center text-xs text-slate-400 mb-6">
+            <div className="text-center text-xs text-slate-400 dark:text-slate-500 mb-6">
               Xaridingiz uchun rahmat!<br />
               Har doim biz bilan bo'ling.
             </div>
 
             <div className="flex flex-col gap-2 no-print">
-              <button onClick={handlePrint} className="w-full bg-slate-800 text-white py-2 rounded-lg font-medium">Chop etish</button>
-              <button onClick={() => setShowReceipt(null)} className="w-full text-slate-500 py-2">Yopish</button>
+              <button onClick={handlePrint} className="w-full bg-slate-800 dark:bg-emerald-600 hover:bg-slate-900 dark:hover:bg-emerald-700 text-white py-2 rounded-lg font-medium transition-colors">Chop etish</button>
+              <button onClick={() => setShowReceipt(null)} className="w-full text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 py-2 transition-colors">Yopish</button>
             </div>
           </div>
         </div>

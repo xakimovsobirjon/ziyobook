@@ -1,16 +1,29 @@
 import React, { useState } from 'react';
-import { User, Lock, Store, LogOut, Save, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Lock, Store, LogOut, Save, Check, AlertCircle, Loader2, ToggleLeft, ToggleRight, Settings as SettingsIcon } from 'lucide-react';
 import { AdminData, updateAdminStoreName, updateUserPassword, reauthenticateUser } from '../services/auth';
+import { StoreSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SettingsProps {
     adminData: AdminData | null;
     onUpdateProfile: (newName: string) => Promise<void>;
     onLogout: () => Promise<void>;
+    storeSettings?: StoreSettings;
+    onUpdateSettings: (settings: StoreSettings) => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogout }) => {
+const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogout, storeSettings, onUpdateSettings }) => {
     const { user } = useAuth();
+
+    // Store Settings State
+    const allowNegativeStock = storeSettings?.allowNegativeStock ?? true;
+
+    const handleToggleNegativeStock = () => {
+        onUpdateSettings({
+            ...storeSettings,
+            allowNegativeStock: !allowNegativeStock
+        });
+    };
 
     // Profile State
     const [storeName, setStoreName] = useState(adminData?.storeName || '');
@@ -169,6 +182,36 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                             Saqlash
                         </button>
                     </form>
+                </div>
+            </div>
+
+            {/* Store Settings Section */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                            <SettingsIcon className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Savdo Sozlamalari</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Sotuv jarayonini boshqarish</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-6">
+                    <div className="flex items-center justify-between max-w-md">
+                        <div>
+                            <h4 className="font-medium text-slate-800 dark:text-white">Minusga Sotish</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Qoldiq 0 bo'lganda ham sotishga ruxsat berish</p>
+                        </div>
+                        <button
+                            onClick={handleToggleNegativeStock}
+                            className={`p-1 rounded-full transition-colors ${allowNegativeStock ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}
+                            title={allowNegativeStock ? "Yoqilgan" : "O'chirilgan"}
+                        >
+                            {allowNegativeStock ? <ToggleRight className="w-10 h-10" /> : <ToggleLeft className="w-10 h-10" />}
+                        </button>
+                    </div>
                 </div>
             </div>
 

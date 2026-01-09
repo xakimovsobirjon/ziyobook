@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Product, Partner, TransactionType, PaymentMethod, Transaction, Category } from '../types';
-import { Search, Plus, Minus, PackagePlus, User, Trash, Image as ImageIcon, ScanBarcode, Upload, X, Loader2, Check, Edit2 } from 'lucide-react';
+import { Search, Plus, Minus, PackagePlus, User, Trash, Image as ImageIcon, ScanBarcode, Upload, X, Loader2, Check, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateId, uploadProductImage, getSupplySessionData, saveSupplySessionData, clearSupplySessionData, SupplyCartItem } from '../services/storage';
 
 interface SupplyProps {
@@ -25,6 +25,9 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Modal State for New Product
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,6 +88,18 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     };
   }, [cart, selectedSupplierId, paymentMethod, isLoading, saveSessionDebounced]);
 
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const { current } = scrollRef;
+      const scrollAmount = 200;
+      if (direction === 'left') {
+        current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else {
+        current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    }
+  };
+
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
@@ -108,12 +123,14 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
   }, [searchTerm, products]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.barcode && p.barcode.includes(searchTerm))
-    );
-  }, [products, searchTerm]);
+    return products.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.barcode && p.barcode.includes(searchTerm));
+      const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchTerm, selectedCategory]);
 
 
   const removeFromCart = (id: string) => {
@@ -271,6 +288,56 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
 
       {/* Product List */}
       <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {/* Category Tabs */}
+        <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20">
+          <div className="relative flex items-center">
+            <button
+              onClick={() => scroll('left')}
+              className="absolute left-0 z-10 p-2 bg-gradient-to-r from-slate-50 dark:from-slate-800 via-slate-50 dark:via-slate-800 to-transparent hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-slate-400 h-full flex items-center"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div
+              ref={scrollRef}
+              className="flex-1 w-0 flex items-center gap-2 overflow-x-auto px-8 py-2 scroll-smooth no-scrollbar"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <style>{`
+                .no-scrollbar::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === 'all'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'
+                  }`}
+              >
+                Hammasi
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat.id
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'
+                    }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => scroll('right')}
+              className="absolute right-0 z-10 p-2 bg-gradient-to-l from-slate-50 dark:from-slate-800 via-slate-50 dark:via-slate-800 to-transparent hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-slate-400 h-full flex items-center"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
