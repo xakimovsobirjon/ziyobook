@@ -64,6 +64,7 @@ export interface Transaction {
 
 export interface StoreSettings {
   allowNegativeStock: boolean; // Minusga sotish
+  allowPriceChange: boolean; // Sotishda narxni o'zgartirish
 }
 
 export interface StoreData {

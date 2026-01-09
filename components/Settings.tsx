@@ -17,11 +17,21 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
 
     // Store Settings State
     const allowNegativeStock = storeSettings?.allowNegativeStock ?? true;
+    const allowPriceChange = storeSettings?.allowPriceChange ?? false;
 
     const handleToggleNegativeStock = () => {
         onUpdateSettings({
             ...storeSettings,
-            allowNegativeStock: !allowNegativeStock
+            allowNegativeStock: !allowNegativeStock,
+            allowPriceChange: allowPriceChange
+        });
+    };
+
+    const handleTogglePriceChange = () => {
+        onUpdateSettings({
+            ...storeSettings,
+            allowNegativeStock: allowNegativeStock,
+            allowPriceChange: !allowPriceChange
         });
     };
 
@@ -198,7 +208,8 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                         </div>
                     </div>
                 </div>
-                <div className="p-6">
+                <div className="p-6 space-y-6">
+                    {/* Minusga sotish */}
                     <div className="flex items-center justify-between max-w-md">
                         <div>
                             <h4 className="font-medium text-slate-800 dark:text-white">Minusga Sotish</h4>
@@ -210,6 +221,21 @@ const Settings: React.FC<SettingsProps> = ({ adminData, onUpdateProfile, onLogou
                             title={allowNegativeStock ? "Yoqilgan" : "O'chirilgan"}
                         >
                             {allowNegativeStock ? <ToggleRight className="w-10 h-10" /> : <ToggleLeft className="w-10 h-10" />}
+                        </button>
+                    </div>
+
+                    {/* Narxni o'zgartirish */}
+                    <div className="flex items-center justify-between max-w-md pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div>
+                            <h4 className="font-medium text-slate-800 dark:text-white">Narxni O'zgartirish</h4>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Sotish vaqtida narxni tahrirlashga ruxsat</p>
+                        </div>
+                        <button
+                            onClick={handleTogglePriceChange}
+                            className={`p-1 rounded-full transition-colors ${allowPriceChange ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}
+                            title={allowPriceChange ? "Yoqilgan" : "O'chirilgan"}
+                        >
+                            {allowPriceChange ? <ToggleRight className="w-10 h-10" /> : <ToggleLeft className="w-10 h-10" />}
                         </button>
                     </div>
                 </div>

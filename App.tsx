@@ -194,7 +194,7 @@ const AppContent: React.FC = () => {
       case 'dashboard':
         return <Dashboard products={data.products} transactions={data.transactions} partners={data.partners} employees={data.employees} />;
       case 'pos':
-        return <POS products={data.products} customers={data.partners.filter(p => p.type === 'CUSTOMER')} onTransaction={handlePosTransaction} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} allowNegativeStock={data.settings?.allowNegativeStock ?? true} />;
+        return <POS products={data.products} customers={data.partners.filter(p => p.type === 'CUSTOMER')} onTransaction={handlePosTransaction} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} allowNegativeStock={data.settings?.allowNegativeStock ?? true} allowPriceChange={data.settings?.allowPriceChange ?? false} />;
       case 'supply':
         return <Supply products={data.products} suppliers={data.partners.filter(p => p.type === 'SUPPLIER')} onTransaction={handleSupplyTransaction} onUpdateProducts={updateProducts} categories={data.categories || []} onUpdateCategories={updateCategories} />;
       case 'inventory':

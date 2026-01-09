@@ -11,11 +11,12 @@ interface POSProps {
   categories: Category[];
   onUpdateCategories: (categories: Category[]) => void;
   allowNegativeStock: boolean;
+  allowPriceChange: boolean;
 }
 
 import { useAuth } from '../contexts/AuthContext';
 
-const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateProducts, categories, onUpdateCategories, allowNegativeStock }) => {
+const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateProducts, categories, onUpdateCategories, allowNegativeStock, allowPriceChange }) => {
   const { storeId } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -369,7 +370,24 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
               <div key={item.id} className="flex justify-between items-center bg-white dark:bg-slate-700 border border-slate-100 dark:border-slate-600 p-2 rounded-lg shadow-sm">
                 <div className="flex-1 pr-2">
                   <h4 className="text-sm font-medium text-slate-800 dark:text-white line-clamp-1">{item.name}</h4>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{item.priceSell.toLocaleString()} x {item.qty}</p>
+                  {allowPriceChange ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        className="w-20 text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-200 dark:border-emerald-800 rounded px-1 py-0.5"
+                        value={item.priceSell}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          const newPrice = val === '' ? 0 : Number(val);
+                          setCart(cart.map(c => c.id === item.id ? { ...c, priceSell: newPrice } : c));
+                        }}
+                      />
+                      <span className="text-xs text-slate-500 dark:text-slate-400">x {item.qty}</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{item.priceSell.toLocaleString()} x {item.qty}</p>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <button onClick={() => updateQty(item.id, -1)} className="p-1 bg-slate-100 dark:bg-slate-600 rounded hover:bg-slate-200 dark:hover:bg-slate-500 text-slate-600 dark:text-slate-300"><Minus className="w-3 h-3" /></button>
