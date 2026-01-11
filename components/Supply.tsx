@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Product, Partner, TransactionType, PaymentMethod, Transaction, Category } from '../types';
 import { Search, Plus, Minus, PackagePlus, User, Trash, Image as ImageIcon, ScanBarcode, Upload, X, Loader2, Check, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateId, uploadProductImage, getSupplySessionData, saveSupplySessionData, clearSupplySessionData, SupplyCartItem } from '../services/storage';
+import { formatPrice, parsePrice, isValidName } from '../utils';
 
 interface SupplyProps {
   products: Product[];
@@ -42,7 +43,13 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Product>>({});
   const [editCategorySearch, setEditCategorySearch] = useState('');
+
   const [showEditCategoryDropdown, setShowEditCategoryDropdown] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const [categoryError, setCategoryError] = useState('');
+  const [priceBuyError, setPriceBuyError] = useState('');
+  const [priceSellError, setPriceSellError] = useState('');
+
 
   // Load initial state from Firebase
   useEffect(() => {
@@ -210,18 +217,41 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
   // Create New Product Logic
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProduct.name || !newProduct.priceSell) return;
+
+    let hasError = false;
+
+    if (!isValidName(newProduct.name || '')) {
+      setNameError("Nomi kamida 3 ta harfdan iborat bo'lishi kerak!");
+      hasError = true;
+    }
+
+    if (!newProduct.category) {
+      setCategoryError("Kategoriya tanlanishi shart!");
+      hasError = true;
+    }
+
+    if (!newProduct.priceBuy) {
+      setPriceBuyError("Kelish narxi kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (!newProduct.priceSell) {
+      setPriceSellError("Sotuv narxi kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     const product: Product = {
       id: generateId(),
-      name: newProduct.name,
-      category: newProduct.category || 'Boshqa',
+      name: newProduct.name!,
+      category: newProduct.category!,
       priceBuy: Number(newProduct.priceBuy),
       priceSell: Number(newProduct.priceSell),
       stock: 0, // Initial stock 0, will be added via Supply cart
       minStock: Number(newProduct.minStock) || 5,
-      imageUrl: newProduct.imageUrl,
-      barcode: newProduct.barcode
+      imageUrl: newProduct.imageUrl || '',
+      barcode: newProduct.barcode || ''
     };
 
     // 1. Update Global Products
@@ -233,6 +263,10 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     // 3. Reset and Close
     setIsModalOpen(false);
     setNewProduct({ name: '', category: '', priceBuy: 0, priceSell: 0, stock: 0, minStock: 5, imageUrl: '', barcode: '' });
+    setNameError('');
+    setCategoryError('');
+    setPriceBuyError('');
+    setPriceSellError('');
   };
 
   // Edit product handlers
@@ -242,12 +276,40 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
     setEditFormData(product);
   };
 
+
   const handleSaveEdit = () => {
-    if (!editingProduct || !editFormData.name || !editFormData.priceSell) return;
-    const updated = products.map(p => p.id === editingProduct.id ? { ...p, ...editFormData } as Product : p);
+    let hasError = false;
+
+    if (!isValidName(editFormData.name || '')) {
+      setNameError("Nomi kamida 3 ta harfdan iborat bo'lishi kerak!");
+      hasError = true;
+    }
+
+    if (!editFormData.category) {
+      setCategoryError("Kategoriya tanlanishi shart!");
+      hasError = true;
+    }
+
+    if (!editFormData.priceBuy) {
+      setPriceBuyError("Kelish narxi kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (!editFormData.priceSell) {
+      setPriceSellError("Sotuv narxi kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    const updated = products.map(p => p.id === editingProduct!.id ? { ...p, ...editFormData } as Product : p);
     onUpdateProducts(updated);
     setEditingProduct(null);
     setEditFormData({});
+    setNameError('');
+    setCategoryError('');
+    setPriceBuyError('');
+    setPriceSellError('');
   };
 
   const [isUploading, setIsUploading] = useState(false);
@@ -425,10 +487,10 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                   <div>
                     <label className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Kelish narxi</label>
                     <input
-                      type="number"
+                      type="text"
                       className="w-full border rounded p-1 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                      value={item.newCost}
-                      onChange={(e) => updateCost(item.id, Number(e.target.value))}
+                      value={formatPrice(item.newCost || 0)}
+                      onChange={(e) => updateCost(item.id, parsePrice(e.target.value))}
                     />
                   </div>
                   <div>
@@ -583,7 +645,9 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
+
+                <input type="text" required className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${nameError && isModalOpen ? 'border-red-500' : 'dark:border-slate-600'}`} value={newProduct.name} onChange={e => { setNewProduct({ ...newProduct, name: e.target.value }); setNameError(''); }} />
+                {nameError && isModalOpen && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategoriya</label>
@@ -592,7 +656,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                     <div className="flex-1 relative">
                       <input
                         type="text"
-                        className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                        className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${categoryError && isModalOpen ? 'border-red-500' : 'dark:border-slate-600'}`}
                         placeholder="Kategoriya qidirish..."
                         value={categorySearch || categories.find(c => c.id === newProduct.category)?.name || ''}
                         onChange={e => {
@@ -601,6 +665,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                           if (!e.target.value) {
                             setNewProduct({ ...newProduct, category: '' });
                           }
+                          setCategoryError('');
                         }}
                         onFocus={() => setShowCategoryDropdown(true)}
                       />
@@ -617,6 +682,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                                   setNewProduct({ ...newProduct, category: cat.id });
                                   setCategorySearch('');
                                   setShowCategoryDropdown(false);
+                                  setCategoryError('');
                                 }}
                               >
                                 {cat.name}
@@ -633,6 +699,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                                 setNewProduct({ ...newProduct, category: newCat.id });
                                 setCategorySearch('');
                                 setShowCategoryDropdown(false);
+                                setCategoryError('');
                               }
                             }}
                           >
@@ -645,6 +712,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                   {showCategoryDropdown && (
                     <div className="fixed inset-0 z-40" onClick={() => setShowCategoryDropdown(false)} />
                   )}
+                  {categoryError && isModalOpen && <p className="text-red-500 text-xs mt-1">{categoryError}</p>}
                 </div>
               </div>
 
@@ -655,15 +723,17 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                     type="text"
                     inputMode="numeric"
                     required
-                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                    value={newProduct.priceBuy || ''}
+                    className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${priceBuyError && isModalOpen ? 'border-red-500' : 'dark:border-slate-600'}`}
+                    value={formatPrice(newProduct.priceBuy || '')}
                     onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
                     onChange={e => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setNewProduct({ ...newProduct, priceBuy: val === '' ? 0 : Number(val) });
+                      const val = e.target.value.replace(/[^0-9\s]/g, '');
+                      setNewProduct({ ...newProduct, priceBuy: parsePrice(val) });
+                      setPriceBuyError('');
                     }}
                     placeholder="0"
                   />
+                  {priceBuyError && isModalOpen && <p className="text-red-500 text-xs mt-1">{priceBuyError}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv Narxi</label>
@@ -671,15 +741,17 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                     type="text"
                     inputMode="numeric"
                     required
-                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                    value={newProduct.priceSell || ''}
+                    className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${priceSellError && isModalOpen ? 'border-red-500' : 'dark:border-slate-600'}`}
+                    value={formatPrice(newProduct.priceSell || '')}
                     onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
                     onChange={e => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setNewProduct({ ...newProduct, priceSell: val === '' ? 0 : Number(val) });
+                      const val = e.target.value.replace(/[^0-9\s]/g, '');
+                      setNewProduct({ ...newProduct, priceSell: parsePrice(val) });
+                      setPriceSellError('');
                     }}
                     placeholder="0"
                   />
+                  {priceSellError && isModalOpen && <p className="text-red-500 text-xs mt-1">{priceSellError}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -702,7 +774,7 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">Bekor qilish</button>
+                <button type="button" onClick={() => { setIsModalOpen(false); setNameError(''); setCategoryError(''); setPriceBuyError(''); setPriceSellError(''); }} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">Bekor qilish</button>
                 <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Yaratish va Qo'shish</button>
               </div>
             </form>
@@ -715,42 +787,53 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
+
               <h2 className="text-lg font-bold text-slate-800 dark:text-white">Mahsulotni tahrirlash</h2>
-              <button onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400">
+              <button onClick={() => { setEditingProduct(null); setEditFormData({}); setNameError(''); setCategoryError(''); setPriceBuyError(''); setPriceSellError(''); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500 dark:text-slate-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.name || ''} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
+
+                <input type="text" required className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${nameError && editingProduct ? 'border-red-500' : 'dark:border-slate-600'}`} value={editFormData.name || ''} onChange={e => { setEditFormData({ ...editFormData, name: e.target.value }); setNameError(''); }} />
+                {nameError && editingProduct && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategoriya</label>
                 <div className="relative">
                   <input
                     type="text"
-                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${categoryError && editingProduct ? 'border-red-500' : 'dark:border-slate-600'}`}
                     placeholder="Kategoriya qidirish..."
                     value={editCategorySearch || categories.find(c => c.id === editFormData.category)?.name || ''}
-                    onChange={e => { setEditCategorySearch(e.target.value); setShowEditCategoryDropdown(true); }}
+                    onChange={e => {
+                      setEditCategorySearch(e.target.value);
+                      setShowEditCategoryDropdown(true);
+                      if (!e.target.value) {
+                        setEditFormData({ ...editFormData, category: '' });
+                      }
+                      setCategoryError('');
+                    }}
                     onFocus={() => setShowEditCategoryDropdown(true)}
                   />
                   {showEditCategoryDropdown && (
                     <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                       {categories.filter(cat => cat.name.toLowerCase().includes((editCategorySearch || '').toLowerCase())).map(cat => (
                         <button key={cat.id} type="button" className={`w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-white ${editFormData.category === cat.id ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : ''}`}
-                          onClick={() => { setEditFormData({ ...editFormData, category: cat.id }); setEditCategorySearch(''); setShowEditCategoryDropdown(false); }}>
+                          onClick={() => { setEditFormData({ ...editFormData, category: cat.id }); setEditCategorySearch(''); setShowEditCategoryDropdown(false); setCategoryError(''); }}>
                           {cat.name}
                         </button>
                       ))}
                       <button type="button" className="w-full text-left px-3 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-t dark:border-slate-700"
-                        onClick={() => { const name = prompt('Yangi kategoriya nomi:'); if (name?.trim()) { const newCat = { id: generateId(), name: name.trim() }; onUpdateCategories([...categories, newCat]); setEditFormData({ ...editFormData, category: newCat.id }); setShowEditCategoryDropdown(false); } }}>
+                        onClick={() => { const name = prompt('Yangi kategoriya nomi:'); if (name?.trim()) { const newCat = { id: generateId(), name: name.trim() }; onUpdateCategories([...categories, newCat]); setEditFormData({ ...editFormData, category: newCat.id }); setShowEditCategoryDropdown(false); setCategoryError(''); } }}>
                         + Yangi kategoriya
                       </button>
                     </div>
                   )}
                   {showEditCategoryDropdown && <div className="fixed inset-0 z-40" onClick={() => setShowEditCategoryDropdown(false)} />}
+                  {categoryError && editingProduct && <p className="text-red-500 text-xs mt-1">{categoryError}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -759,15 +842,18 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                   <input
                     type="text"
                     inputMode="numeric"
-                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                    value={editFormData.priceBuy || ''}
+                    required
+                    className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${priceBuyError && editingProduct ? 'border-red-500' : 'dark:border-slate-600'}`}
+                    value={formatPrice(editFormData.priceBuy || '')}
                     onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
                     onChange={e => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setEditFormData({ ...editFormData, priceBuy: val === '' ? 0 : Number(val) });
+                      const val = e.target.value.replace(/[^0-9\s]/g, '');
+                      setEditFormData({ ...editFormData, priceBuy: parsePrice(val) });
+                      setPriceBuyError('');
                     }}
                     placeholder="0"
                   />
+                  {priceBuyError && editingProduct && <p className="text-red-500 text-xs mt-1">{priceBuyError}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv narxi</label>
@@ -775,15 +861,17 @@ const Supply: React.FC<SupplyProps> = ({ products, suppliers, onTransaction, onU
                     type="text"
                     inputMode="numeric"
                     required
-                    className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                    value={editFormData.priceSell || ''}
+                    className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${priceSellError && editingProduct ? 'border-red-500' : 'dark:border-slate-600'}`}
+                    value={formatPrice(editFormData.priceSell || '')}
                     onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
                     onChange={e => {
-                      const val = e.target.value.replace(/[^0-9]/g, '');
-                      setEditFormData({ ...editFormData, priceSell: val === '' ? 0 : Number(val) });
+                      const val = e.target.value.replace(/[^0-9\s]/g, '');
+                      setEditFormData({ ...editFormData, priceSell: parsePrice(val) });
+                      setPriceSellError('');
                     }}
                     placeholder="0"
                   />
+                  {priceSellError && editingProduct && <p className="text-red-500 text-xs mt-1">{priceSellError}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

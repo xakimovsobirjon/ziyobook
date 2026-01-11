@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Product, Category } from '../types';
 import { Plus, Search, Edit2, Trash2, AlertCircle, Image as ImageIcon, ScanBarcode, Upload, X, Loader2, Check, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateId, uploadProductImage } from '../services/storage';
+import { formatPrice, parsePrice, isValidName } from '../utils';
 
 interface InventoryProps {
   products: Product[];
@@ -23,6 +24,10 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
   const [formData, setFormData] = useState<Partial<Product>>({
     name: '', category: '', priceBuy: 0, priceSell: 0, stock: 0, minStock: 5, imageUrl: '', barcode: ''
   });
+  const [nameError, setNameError] = useState('');
+  const [categoryError, setCategoryError] = useState('');
+  const [priceBuyError, setPriceBuyError] = useState('');
+  const [priceSellError, setPriceSellError] = useState('');
 
   // Category creation state
   const [showNewCategory, setShowNewCategory] = useState(false);
@@ -30,7 +35,6 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
   const [categorySearch, setCategorySearch] = useState('');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  // Category tabs state
   // Category tabs state
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -61,11 +65,38 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
       setFormData({ name: '', category: '', priceBuy: 0, priceSell: 0, stock: 0, minStock: 5, imageUrl: '', barcode: '' });
     }
     setIsModalOpen(true);
+    setNameError('');
+    setCategoryError('');
+    setPriceBuyError('');
+    setPriceSellError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.priceSell) return;
+
+    let hasError = false;
+
+    if (!isValidName(formData.name || '')) {
+      setNameError("Kitob nomi kamida 3 ta harfdan iborat bo'lishi kerak!");
+      hasError = true;
+    }
+
+    if (!formData.category) {
+      setCategoryError("Kategoriya tanlanishi shart!");
+      hasError = true;
+    }
+
+    if (!formData.priceBuy) {
+      setPriceBuyError("Tannarx kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (!formData.priceSell) {
+      setPriceSellError("Sotuv narxi kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     setIsSaving(true);
     setSaveSuccess(false);
@@ -79,6 +110,10 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
         await onUpdateProducts([...products, newProduct]);
       }
       setIsModalOpen(false);
+      setNameError('');
+      setCategoryError('');
+      setPriceBuyError('');
+      setPriceSellError('');
       // Show success toast
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -175,8 +210,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Omborxona</h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-end gap-4">
         <button
           onClick={() => handleOpenModal()}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center"
@@ -452,11 +486,12 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
                     <input
                       type="text"
                       required
-                      className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
+                      className={`w-full border p-3 rounded-xl dark:bg-slate-700 dark:text-white transition-all ${nameError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
                       value={formData.name}
-                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      onChange={e => { setFormData({ ...formData, name: e.target.value }); setNameError(''); }}
                       placeholder="Kitob nomini kiriting..."
                     />
+                    {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
                   </div>
 
                   {/* Category */}
@@ -479,6 +514,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
                               const newCat: Category = { id: generateId(), name: newCategoryName.trim() };
                               onUpdateCategories([...categories, newCat]);
                               setFormData({ ...formData, category: newCat.id });
+                              setCategoryError('');
                               setNewCategoryName('');
                               setShowNewCategory(false);
                             }
@@ -501,7 +537,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
                           <div className="flex-1 relative">
                             <input
                               type="text"
-                              className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                              className={`w-full border rounded-xl p-3 dark:bg-slate-700 dark:text-white transition-all ${categoryError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
                               placeholder="Kategoriya tanlang..."
                               value={categorySearch || categories.find(c => c.id === formData.category)?.name || ''}
                               onChange={e => {
@@ -510,6 +546,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
                                 if (!e.target.value) {
                                   setFormData({ ...formData, category: '' });
                                 }
+                                setCategoryError('');
                               }}
                               onFocus={() => setShowCategoryDropdown(true)}
                             />
@@ -526,6 +563,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
                                         setFormData({ ...formData, category: cat.id });
                                         setCategorySearch('');
                                         setShowCategoryDropdown(false);
+                                        setCategoryError('');
                                       }}
                                     >
                                       {cat.name}
@@ -549,6 +587,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
                         {showCategoryDropdown && (
                           <div className="fixed inset-0 z-40" onClick={() => setShowCategoryDropdown(false)} />
                         )}
+                        {categoryError && <p className="text-red-500 text-xs mt-1">{categoryError}</p>}
                       </div>
                     )}
                   </div>
@@ -561,15 +600,17 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
                         type="text"
                         inputMode="numeric"
                         required
-                        className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
-                        value={formData.priceBuy || ''}
+                        className={`w-full border rounded-xl p-3 dark:bg-slate-700 dark:text-white transition-all ${priceBuyError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
+                        value={formatPrice(formData.priceBuy || '')}
                         onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
                         onChange={e => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setFormData({ ...formData, priceBuy: val === '' ? 0 : Number(val) });
+                          const val = e.target.value.replace(/[^0-9\s]/g, '');
+                          setFormData({ ...formData, priceBuy: parsePrice(val) });
+                          setPriceBuyError('');
                         }}
                         placeholder="0"
                       />
+                      {priceBuyError && <p className="text-red-500 text-xs mt-1">{priceBuyError}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Sotuv narxi (so'm)</label>
@@ -577,15 +618,17 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
                         type="text"
                         inputMode="numeric"
                         required
-                        className="w-full border border-slate-300 dark:border-slate-600 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-700 dark:text-white transition-all"
-                        value={formData.priceSell || ''}
+                        className={`w-full border rounded-xl p-3 dark:bg-slate-700 dark:text-white transition-all ${priceSellError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
+                        value={formatPrice(formData.priceSell || '')}
                         onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
                         onChange={e => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          setFormData({ ...formData, priceSell: val === '' ? 0 : Number(val) });
+                          const val = e.target.value.replace(/[^0-9\s]/g, '');
+                          setFormData({ ...formData, priceSell: parsePrice(val) });
+                          setPriceSellError('');
                         }}
                         placeholder="0"
                       />
+                      {priceSellError && <p className="text-red-500 text-xs mt-1">{priceSellError}</p>}
                     </div>
                   </div>
 
@@ -631,7 +674,7 @@ const Inventory: React.FC<InventoryProps> = ({ products, onUpdateProducts, categ
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => { setIsModalOpen(false); setNameError(''); }}
                   disabled={isSaving}
                   className="px-5 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl disabled:opacity-50 font-medium transition-colors"
                 >

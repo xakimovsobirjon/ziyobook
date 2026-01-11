@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Transaction, TransactionType } from '../types';
 import { Wallet, Plus, Check } from 'lucide-react';
 import { generateId } from '../services/storage';
+import { formatPrice, parsePrice } from '../utils';
 
 interface ExpensesProps {
   onAddExpense: (transaction: Transaction) => void;
@@ -43,7 +44,7 @@ const Expenses: React.FC<ExpensesProps> = ({ onAddExpense }) => {
         </div>
       )}
 
-      <h2 className="text-2xl font-bold text-slate-800 dark:text-white text-center">Harajatlar Kiritish</h2>
+
       <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
         <div className="flex justify-center mb-6">
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-500 dark:text-red-400">
@@ -54,12 +55,16 @@ const Expenses: React.FC<ExpensesProps> = ({ onAddExpense }) => {
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Summa</label>
             <input
-              type="number"
+              type="text"
               required
               className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
               placeholder="0"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              value={formatPrice(amount)}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9\s]/g, '');
+                if (val.trim() === '') setAmount('');
+                else setAmount(parsePrice(val).toString());
+              }}
             />
           </div>
           <div>

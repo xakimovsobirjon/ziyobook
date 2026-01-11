@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Partner, Transaction, TransactionType } from '../types';
 import { Plus, Phone, User, Trash2, CreditCard, Check, Loader2, Pencil, X } from 'lucide-react';
 import { generateId } from '../services/storage';
+import { formatPhone, isValidPhone, isValidName } from '../utils';
 
 interface CRMProps {
   partners: Partner[];
@@ -17,11 +18,24 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners, onAddTransaction 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  const [nameError, setNameError] = useState('');
 
   const filteredPartners = partners.filter(p => p.type === activeType);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isValidPhone(newPartner.phone)) {
+      setPhoneError("Telefon raqam to'liq kiritilmagan!");
+      return;
+    }
+
+    if (!isValidName(newPartner.name)) {
+      setNameError("Ism kamida 3 ta harfdan iborat bo'lishi kerak!");
+      return;
+    }
+
     setIsSaving(true);
     try {
       if (editingPartner) {
@@ -47,6 +61,8 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners, onAddTransaction 
       setShowModal(false);
       setNewPartner({ name: '', phone: '', balance: 0 });
       setEditingPartner(null);
+      setPhoneError('');
+      setNameError('');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
@@ -135,9 +151,7 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners, onAddTransaction 
       </div>
 
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-white">
-          {activeType === 'CUSTOMER' ? "Mijozlar Ro'yxati" : "Ta'minotchilar Ro'yxati"}
-        </h2>
+
         <button onClick={() => setShowModal(true)} className="bg-emerald-600 text-white px-4 py-2 rounded-lg flex items-center">
           <Plus className="w-4 h-4 mr-2" /> Qo'shish
         </button>
@@ -200,7 +214,7 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners, onAddTransaction 
           <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl relative">
               <button
-                onClick={() => { setShowModal(false); setEditingPartner(null); setNewPartner({ name: '', phone: '', balance: 0 }); }}
+                onClick={() => { setShowModal(false); setEditingPartner(null); setNewPartner({ name: '', phone: '', balance: 0 }); setPhoneError(''); setNameError(''); }}
                 className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
                 <X className="w-5 h-5" />
@@ -214,20 +228,23 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners, onAddTransaction 
                   <input
                     required
                     type="text"
-                    className="w-full border p-2 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    className={`w-full border p-2 rounded-lg dark:bg-slate-700 dark:text-white ${nameError ? 'border-red-500' : 'dark:border-slate-600'}`}
                     value={newPartner.name}
-                    onChange={e => setNewPartner({ ...newPartner, name: e.target.value })}
+                    onChange={e => { setNewPartner({ ...newPartner, name: e.target.value }); setNameError(''); }}
                   />
+                  {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
                 </div>
                 <div>
                   <label className="block text-sm text-slate-600 dark:text-slate-300 mb-1">Telefon</label>
                   <input
                     required
                     type="text"
-                    className="w-full border p-2 rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                    className={`w-full border p-2 rounded-lg dark:bg-slate-700 dark:text-white ${phoneError ? 'border-red-500' : 'dark:border-slate-600'}`}
                     value={newPartner.phone}
-                    onChange={e => setNewPartner({ ...newPartner, phone: e.target.value })}
+                    onChange={e => { setNewPartner({ ...newPartner, phone: formatPhone(e.target.value) }); setPhoneError(''); }}
+                    placeholder="+998 90 123 45 67"
                   />
+                  {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
                 </div>
                 <button type="submit" disabled={isSaving} className="w-full bg-emerald-600 text-white py-2 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
                   {isSaving ? (
@@ -239,7 +256,7 @@ const CRM: React.FC<CRMProps> = ({ partners, onUpdatePartners, onAddTransaction 
                     'Saqlash'
                   )}
                 </button>
-                <button type="button" onClick={() => { setShowModal(false); setEditingPartner(null); setNewPartner({ name: '', phone: '', balance: 0 }); }} disabled={isSaving} className="w-full text-slate-500 dark:text-slate-400 py-2 disabled:opacity-50">Bekor qilish</button>
+                <button type="button" onClick={() => { setShowModal(false); setEditingPartner(null); setNewPartner({ name: '', phone: '', balance: 0 }); setPhoneError(''); setNameError(''); }} disabled={isSaving} className="w-full text-slate-500 dark:text-slate-400 py-2 disabled:opacity-50">Bekor qilish</button>
               </form>
             </div>
           </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Employee, Transaction, TransactionType } from '../types';
 import { User, Plus, DollarSign, Trash2, Check, Loader2, Pencil, X } from 'lucide-react';
 import { generateId } from '../services/storage';
+import { formatPrice, parsePrice, formatPhone, isValidPhone, isValidName } from '../utils';
 
 interface EmployeesProps {
   employees: Employee[];
@@ -20,9 +21,38 @@ const Employees: React.FC<EmployeesProps> = ({ employees, onUpdateEmployees, onP
   // Salary payment modal state
   const [salaryModal, setSalaryModal] = useState<Employee | null>(null);
   const [salaryAmount, setSalaryAmount] = useState<number>(0);
+  const [phoneError, setPhoneError] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [roleError, setRoleError] = useState('');
+  const [salaryError, setSalaryError] = useState('');
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    let hasError = false;
+
+    if (!isValidPhone(newEmployee.phone || '')) {
+      setPhoneError("Telefon raqam to'liq kiritilmagan!");
+      hasError = true;
+    }
+
+    if (!isValidName(newEmployee.name || '')) {
+      setNameError("Ism kamida 3 ta harfdan iborat bo'lishi kerak!");
+      hasError = true;
+    }
+
+    if (!newEmployee.role) {
+      setRoleError("Lavozim kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (!newEmployee.salary) {
+      setSalaryError("Oylik maoshi kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (hasError) return;
+
     setIsSaving(true);
     try {
       if (editingEmployee) {
@@ -48,6 +78,10 @@ const Employees: React.FC<EmployeesProps> = ({ employees, onUpdateEmployees, onP
       setShowModal(false);
       setNewEmployee({ name: '', role: '', phone: '', salary: 0 });
       setEditingEmployee(null);
+      setPhoneError('');
+      setNameError('');
+      setRoleError('');
+      setSalaryError('');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
@@ -116,7 +150,7 @@ const Employees: React.FC<EmployeesProps> = ({ employees, onUpdateEmployees, onP
       )}
 
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Hodimlar</h2>
+
         <button onClick={() => setShowModal(true)} className="bg-emerald-600 text-white px-4 py-2 rounded-lg flex items-center">
           <Plus className="w-4 h-4 mr-2" /> Hodim Qo'shish
         </button>
@@ -171,7 +205,7 @@ const Employees: React.FC<EmployeesProps> = ({ employees, onUpdateEmployees, onP
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl relative">
             <button
-              onClick={() => { setShowModal(false); setEditingEmployee(null); setNewEmployee({ name: '', role: '', phone: '', salary: 0 }); }}
+              onClick={() => { setShowModal(false); setEditingEmployee(null); setNewEmployee({ name: '', role: '', phone: '', salary: 0 }); setPhoneError(''); setNameError(''); setRoleError(''); setSalaryError(''); }}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             >
               <X className="w-5 h-5" />
@@ -180,25 +214,38 @@ const Employees: React.FC<EmployeesProps> = ({ employees, onUpdateEmployees, onP
               {editingEmployee ? 'Hodimni tahrirlash' : 'Yangi Hodim'}
             </h3>
             <form onSubmit={handleSave} className="space-y-4">
-              <input type="text" placeholder="F.I.SH" required className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newEmployee.name} onChange={e => setNewEmployee({ ...newEmployee, name: e.target.value })} />
-              <input type="text" placeholder="Lavozimi" required className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newEmployee.role} onChange={e => setNewEmployee({ ...newEmployee, role: e.target.value })} />
-              <input type="text" placeholder="Telefon" required className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={newEmployee.phone} onChange={e => setNewEmployee({ ...newEmployee, phone: e.target.value })} />
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="Oylik maoshi"
-                required
-                className="w-full border p-2 rounded dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                value={newEmployee.salary || ''}
-                onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
-                onChange={e => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setNewEmployee({ ...newEmployee, salary: val === '' ? 0 : Number(val) });
-                }}
-              />
+              <div>
+                <input type="text" placeholder="F.I.SH" required className={`w-full border p-2 rounded dark:bg-slate-700 dark:text-white ${nameError ? 'border-red-500' : 'dark:border-slate-600'}`} value={newEmployee.name} onChange={e => { setNewEmployee({ ...newEmployee, name: e.target.value }); setNameError(''); }} />
+                {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
+              </div>
+              <div>
+                <input type="text" placeholder="Lavozimi" required className={`w-full border p-2 rounded dark:bg-slate-700 dark:text-white ${roleError ? 'border-red-500' : 'dark:border-slate-600'}`} value={newEmployee.role} onChange={e => { setNewEmployee({ ...newEmployee, role: e.target.value }); setRoleError(''); }} />
+                {roleError && <p className="text-red-500 text-xs mt-1">{roleError}</p>}
+              </div>
+              <div>
+                <input type="text" placeholder="+998 90 123 45 67" required className={`w-full border p-2 rounded dark:bg-slate-700 dark:text-white ${phoneError ? 'border-red-500' : 'dark:border-slate-600'}`} value={newEmployee.phone} onChange={e => { setNewEmployee({ ...newEmployee, phone: formatPhone(e.target.value) }); setPhoneError(''); }} />
+                {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
+              </div>
+              <div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Oylik maoshi"
+                  required
+                  className={`w-full border p-2 rounded dark:bg-slate-700 dark:text-white ${salaryError ? 'border-red-500' : 'dark:border-slate-600'}`}
+                  value={formatPrice(newEmployee.salary || '')}
+                  onFocus={e => { if (e.target.value === '0') e.target.value = ''; }}
+                  onChange={e => {
+                    const val = e.target.value.replace(/[^0-9\s]/g, '');
+                    setNewEmployee({ ...newEmployee, salary: parsePrice(val) });
+                    setSalaryError('');
+                  }}
+                />
+                {salaryError && <p className="text-red-500 text-xs mt-1">{salaryError}</p>}
+              </div>
 
               <div className="flex justify-end gap-2 mt-4">
-                <button type="button" onClick={() => { setShowModal(false); setEditingEmployee(null); setNewEmployee({ name: '', role: '', phone: '', salary: 0 }); }} disabled={isSaving} className="px-4 py-2 text-slate-500 dark:text-slate-400 disabled:opacity-50">Bekor qilish</button>
+                <button type="button" onClick={() => { setShowModal(false); setEditingEmployee(null); setNewEmployee({ name: '', role: '', phone: '', salary: 0 }); setPhoneError(''); setNameError(''); setRoleError(''); setSalaryError(''); }} disabled={isSaving} className="px-4 py-2 text-slate-500 dark:text-slate-400 disabled:opacity-50">Bekor qilish</button>
                 <button type="submit" disabled={isSaving} className="px-4 py-2 bg-emerald-600 text-white rounded disabled:opacity-50 flex items-center gap-2">
                   {isSaving ? (
                     <>
@@ -264,10 +311,10 @@ const Employees: React.FC<EmployeesProps> = ({ employees, onUpdateEmployees, onP
               <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Maosh To'lash</h3>
               <p className="text-slate-600 dark:text-slate-300 mb-4">{salaryModal.name}ga qancha maosh to'lamoqchisiz?</p>
               <input
-                type="number"
+                type="text"
                 className="w-full border rounded-lg p-3 text-center text-lg mb-4 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                value={salaryAmount}
-                onChange={e => setSalaryAmount(Number(e.target.value))}
+                value={formatPrice(salaryAmount)}
+                onChange={e => setSalaryAmount(parsePrice(e.target.value))}
                 placeholder="Summa kiriting"
               />
               <div className="flex gap-3">

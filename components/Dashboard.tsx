@@ -59,7 +59,7 @@ const Dashboard: React.FC<DashboardProps> = ({ products = [], transactions = [],
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Boshqaruv Paneli</h2>
+
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -57,7 +57,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-4 md:mb-0">Moliya Hisoboti</h2>
+
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Calendar className="w-5 h-5 text-slate-500 dark:text-slate-400" />

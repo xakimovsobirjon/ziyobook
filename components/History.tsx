@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Transaction, TransactionType, PaymentMethod } from '../types';
+import { formatPrice, parsePrice } from '../utils';
 import { Trash2, Calendar, ArrowUpRight, ArrowDownLeft, Wallet, UserCheck, Eye, X, Pencil, Plus, Minus, Loader2, Check, Printer, ShoppingCart } from 'lucide-react';
 
 interface HistoryProps {
@@ -151,7 +152,7 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Tarix</h2>
+
         <select
           className="border rounded-lg p-2 bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white"
           value={filterType}
@@ -386,10 +387,10 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Summa (so'm)</label>
                     <input
-                      type="number"
+                      type="text"
                       className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                      value={editForm.totalAmount}
-                      onChange={e => setEditForm({ ...editForm, totalAmount: Number(e.target.value) })}
+                      value={formatPrice(editForm.totalAmount)}
+                      onChange={e => setEditForm({ ...editForm, totalAmount: parsePrice(e.target.value) })}
                     />
                   </div>
                 )}
@@ -417,10 +418,10 @@ const History: React.FC<HistoryProps> = ({ transactions, onDeleteTransaction, on
                             <td className="p-3">{item.name}</td>
                             <td className="p-3 text-center">
                               <input
-                                type="number"
+                                type="text"
                                 className="w-24 border rounded p-1 text-center dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                                value={item.price}
-                                onChange={(e) => updateItemPrice(item.id, Number(e.target.value))}
+                                value={formatPrice(item.price)}
+                                onChange={(e) => updateItemPrice(item.id, parsePrice(e.target.value))}
                               />
                             </td>
                             <td className="p-3 flex justify-center items-center gap-2">

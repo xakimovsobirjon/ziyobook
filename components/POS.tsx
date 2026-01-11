@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Product, CartItem, Partner, TransactionType, PaymentMethod, Transaction, Category } from '../types';
 import { Search, Plus, Minus, ShoppingCart, User, CreditCard, Trash, Image as ImageIcon, ScanBarcode, AlertCircle, Edit2, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { generateId, getPOSSessionData, savePOSSessionData, clearPOSSessionData } from '../services/storage';
+import { formatPrice, parsePrice, isValidName } from '../utils';
 
 interface POSProps {
   products: Product[];
@@ -35,7 +36,10 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Product>>({});
   const [categorySearch, setCategorySearch] = useState('');
+
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [nameError, setNameError] = useState('');
+  const [priceError, setPriceError] = useState('');
 
   // Load initial state from Firebase
   useEffect(() => {
@@ -218,12 +222,30 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
     setEditFormData(product);
   };
 
+
+
   const handleSaveEdit = () => {
-    if (!editingProduct || !editFormData.name || !editFormData.priceSell) return;
-    const updated = products.map(p => p.id === editingProduct.id ? { ...p, ...editFormData } as Product : p);
+    let hasError = false;
+
+    if (!isValidName(editFormData.name || '')) {
+      setNameError("Nomi kamida 3 ta harfdan iborat bo'lishi kerak!");
+      hasError = true;
+    }
+
+    if (!editFormData.priceSell) {
+      setPriceError("Sotuv narxi kiritilishi shart!");
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    const updated = products.map(p => p.id === editingProduct!.id ? { ...p, ...editFormData } as Product : p);
     onUpdateProducts(updated);
     setEditingProduct(null);
+    setEditingProduct(null);
     setEditFormData({});
+    setNameError('');
+    setPriceError('');
   };
 
   if (isLoading) {
@@ -376,10 +398,10 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
                         type="text"
                         inputMode="numeric"
                         className="w-20 text-xs bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-200 dark:border-emerald-800 rounded px-1 py-0.5"
-                        value={item.priceSell}
+                        value={formatPrice(item.priceSell)}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          const newPrice = val === '' ? 0 : Number(val);
+                          const val = e.target.value.replace(/[^0-9\s]/g, '');
+                          const newPrice = parsePrice(val);
                           setCart(cart.map(c => c.id === item.id ? { ...c, priceSell: newPrice } : c));
                         }}
                       />
@@ -552,14 +574,15 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold text-slate-800 dark:text-white">Mahsulotni tahrirlash</h2>
-              <button onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">
+              <button onClick={() => { setEditingProduct(null); setEditFormData({}); setNameError(''); setPriceError(''); }} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nomi</label>
-                <input type="text" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.name || ''} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
+                <input type="text" required className={`w-full border rounded-lg p-2 dark:bg-slate-700 dark:text-white ${nameError ? 'border-red-500' : 'dark:border-slate-600'}`} value={editFormData.name || ''} onChange={e => { setEditFormData({ ...editFormData, name: e.target.value }); setNameError(''); }} />
+                {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategoriya</label>
@@ -592,11 +615,17 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tannarx</label>
-                  <input type="number" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.priceBuy || 0} onChange={e => setEditFormData({ ...editFormData, priceBuy: Number(e.target.value) })} />
+                  <input type="text" className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formatPrice(editFormData.priceBuy || 0)} onChange={e => {
+                    const val = e.target.value.replace(/[^0-9\s]/g, '');
+                    setEditFormData({ ...editFormData, priceBuy: parsePrice(val) });
+                  }} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sotuv narxi</label>
-                  <input type="number" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={editFormData.priceSell || 0} onChange={e => setEditFormData({ ...editFormData, priceSell: Number(e.target.value) })} />
+                  <input type="text" required className="w-full border rounded-lg p-2 dark:bg-slate-700 dark:border-slate-600 dark:text-white" value={formatPrice(editFormData.priceSell || 0)} onChange={e => {
+                    const val = e.target.value.replace(/[^0-9\s]/g, '');
+                    setEditFormData({ ...editFormData, priceSell: parsePrice(val) });
+                  }} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -610,7 +639,7 @@ const POS: React.FC<POSProps> = ({ products, customers, onTransaction, onUpdateP
                 </div>
               </div>
               <div className="flex gap-2 pt-4">
-                <button type="button" onClick={() => { setEditingProduct(null); setEditFormData({}); }} className="flex-1 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg">Bekor qilish</button>
+                <button type="button" onClick={() => { setEditingProduct(null); setEditFormData({}); setNameError(''); }} className="flex-1 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg">Bekor qilish</button>
                 <button type="submit" className="flex-1 py-2 bg-emerald-600 text-white rounded-lg flex items-center justify-center gap-2">
                   <Check className="w-4 h-4" /> Saqlash
                 </button>
